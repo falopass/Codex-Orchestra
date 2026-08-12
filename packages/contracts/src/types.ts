@@ -178,6 +178,7 @@ export interface Budget {
 export interface Backup {
   id: string;
   target: string;
+  backupPath?: string;
   createdAt: string;
   reason: "before-write" | "before-update" | "manual" | "rollback";
   restorable: boolean;

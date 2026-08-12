@@ -10,7 +10,7 @@ npm test
 npm run check:secrets
 ```
 
-The browser shell is fixture-backed. Native desktop requires Rust/Cargo and Tauri prerequisites.
+The browser shell is fixture-backed. Native desktop requires Rust/Cargo and Tauri prerequisites. Set `CODEX_ORCHESTRA_DATA_DIR` to a temporary directory when exercising native commands in an isolated test; do not point tests at the real local application-data directory.
 
 ## Router lifecycle
 

@@ -60,7 +60,7 @@ const agents: AgentDefinition[] = [
     role: "engineer",
     description: "Backend, integration, debugging and test specialist.",
     providerId: "grok-api",
-    modelId: "grok-api/grok-4.5",
+    modelId: "grok-api/grok-4.6",
     reasoningEffort: "high",
     permissions: ["workspace-write"],
     routingHints: ["contracts first", "tests", "bounded scope"],
@@ -147,8 +147,8 @@ let snapshot: OrchestraSnapshot = {
       contextWindow: 256000,
     },
     {
-      id: "grok-api/grok-4.5",
-      label: "Grok 4.5",
+      id: "grok-api/grok-4.6",
+      label: "Grok 4.6",
       providerId: "grok-api",
       available: true,
       supportsStreaming: true,
@@ -178,7 +178,7 @@ let snapshot: OrchestraSnapshot = {
       id: "usage-2",
       timestamp: "2026-08-12T10:18:00Z",
       provider: "grok-api",
-      model: "grok-api/grok-4.5",
+      model: "grok-api/grok-4.6",
       role: "engineer",
       inputTokens: 25500,
       outputTokens: 7700,
@@ -414,24 +414,44 @@ export async function mockInvoke<T>(
     return [
       preview.file,
       {
+        path: ".codex/agents/orchestra_frontend.toml",
+        action: "create",
+        diff: "generated frontend agent",
+        safe: true,
+      },
+      {
+        path: ".codex/agents/orchestra_engineer.toml",
+        action: "create",
+        diff: "generated engineer agent",
+        safe: true,
+      },
+      {
         path: ".codex/skills/orchestra-routing/SKILL.md",
         action: "create",
-        diff: "create generated routing skill",
+        diff: "generated routing skill",
         safe: true,
       },
     ] as T;
   }
   if (command === "apply_managed_changes") {
-    snapshot.backups.unshift({
-      id: `backup-${Date.now()}`,
-      target: "AGENTS.md",
-      createdAt: now(),
-      reason: "before-write",
-      restorable: true,
-      redacted: true,
-    });
+    const files = (args.files as Array<{ path?: string }> | undefined) ?? [];
+    const backups = ["AGENTS.md", ...files.map((file) => file.path ?? "")]
+      .filter(Boolean)
+      .map((target, index) => {
+        const id = `backup-${Date.now()}-${index}`;
+        snapshot.backups.unshift({
+          id,
+          target,
+          createdAt: now(),
+          reason: "before-write",
+          restorable: true,
+          redacted: true,
+        });
+        return { target };
+      });
     return clone({
       ok: true,
+      backups,
       message:
         "Managed files applied in fixture mode; real file write requires Tauri.",
     }) as T;

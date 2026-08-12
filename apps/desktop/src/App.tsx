@@ -12,6 +12,9 @@ import type {
 import {
   aggregateUsage,
   calculateEstimate,
+  renderAgentToml,
+  renderManagedBlock,
+  renderRoutingSkill,
   resolveModelBinding,
 } from "@codex-orchestra/contracts";
 import { invokeCommand } from "./core/invoke";
@@ -232,7 +235,12 @@ function App() {
         />
       )}
       {view === "setup" && (
-        <Setup snapshot={snapshot} onNavigate={navigate} onNotice={setNotice} />
+        <Setup
+          snapshot={snapshot}
+          onSnapshot={setSnapshot}
+          onNavigate={navigate}
+          onNotice={setNotice}
+        />
       )}
       {view === "team" && (
         <TeamBuilder snapshot={snapshot} onNotice={setNotice} />
@@ -600,14 +608,21 @@ function Dashboard({
 
 function Setup({
   snapshot,
+  onSnapshot,
   onNavigate,
   onNotice,
 }: {
   snapshot: OrchestraSnapshot;
+  onSnapshot: (snapshot: OrchestraSnapshot) => void;
   onNavigate: (view: View) => void;
   onNotice: (notice: string) => void;
 }) {
   const [step, setStep] = useState(1);
+  const [projectPath, setProjectPath] = useState(
+    snapshot.projects[0]?.path ?? "",
+  );
+  const [preview, setPreview] = useState<PreviewFile[] | null>(null);
+  const [applying, setApplying] = useState(false);
   const steps = [
     { label: "Detect", detail: "Codex + Router" },
     { label: "Providers", detail: "Kimi + xAI" },
@@ -769,27 +784,57 @@ function Setup({
               <p className="eyebrow">04 / Review</p>
               <h2>Preview before applying.</h2>
               <p className="lead-copy">
-                The next action would create the agent definitions, routing
-                skill and managed block. Nothing has been written by this
-                browser fixture.
+                Choose the local repo, inspect the exact files and then approve
+                one atomic write. Credentials never enter this flow.
               </p>
+              <label className="field-wide">
+                Project root
+                <input
+                  value={projectPath}
+                  onChange={(event) => setProjectPath(event.target.value)}
+                  placeholder="D:\\Códigos\\mi-proyecto"
+                  spellCheck={false}
+                />
+              </label>
               <div className="preview-lines">
-                <span>
-                  <i>CREATE</i> .codex/agents/orchestra_frontend.toml
-                </span>
-                <span>
-                  <i>CREATE</i> .codex/agents/orchestra_engineer.toml
-                </span>
-                <span>
-                  <i>CREATE</i> .codex/skills/orchestra-routing/SKILL.md
-                </span>
-                <span>
-                  <i>UPDATE</i> AGENTS.md <em>managed block only</em>
-                </span>
+                {(
+                  preview ?? [
+                    {
+                      path: "AGENTS.md",
+                      action: "update" as const,
+                      diff: "managed block only",
+                      safe: true,
+                    },
+                    {
+                      path: ".codex/agents/orchestra_frontend.toml",
+                      action: "create" as const,
+                      diff: "generated frontend agent",
+                      safe: true,
+                    },
+                    {
+                      path: ".codex/agents/orchestra_engineer.toml",
+                      action: "create" as const,
+                      diff: "generated engineer agent",
+                      safe: true,
+                    },
+                    {
+                      path: ".codex/skills/orchestra-routing/SKILL.md",
+                      action: "create" as const,
+                      diff: "generated routing skill",
+                      safe: true,
+                    },
+                  ]
+                ).map((file) => (
+                  <span key={file.path}>
+                    <i>{file.action.toUpperCase()}</i> {file.path}{" "}
+                    <em>{file.diff}</em>
+                  </span>
+                ))}
               </div>
               <div className="callout callout-blue">
-                <strong>Human action required.</strong> Review and approve from
-                the native desktop shell once Rust/Tauri is available.
+                <strong>Human action required.</strong> Preview is read-only;
+                applying asks for explicit confirmation and creates backups for
+                files that already exist.
               </div>
             </>
           )}
@@ -813,14 +858,94 @@ function Setup({
               ) : (
                 <button
                   className="button button-primary"
+                  disabled={applying || !projectPath.trim()}
                   onClick={() => {
-                    onNotice(
-                      "Preview ready. No files were written in fixture mode.",
-                    );
-                    onNavigate("diagnostics");
+                    void (async () => {
+                      setApplying(true);
+                      try {
+                        const root = projectPath.trim();
+                        const agents = snapshot.agents.filter(
+                          (agent) => agent.role !== "root",
+                        );
+                        const block = renderManagedBlock(agents, [
+                          "package.json",
+                          "types/**",
+                          "schemas/**",
+                          "migrations/**",
+                        ]);
+                        const existing = root + "\\AGENTS.md";
+                        const nextPreview = await invokeCommand<PreviewFile[]>(
+                          "managed_preview",
+                          {
+                            path: existing,
+                            existing: "# Project rules\n",
+                            block,
+                          },
+                        );
+                        setPreview(nextPreview);
+                        if (
+                          !window.confirm(
+                            "Apply the reviewed Orchestra files to this project? Existing files will be backed up.",
+                          )
+                        ) {
+                          onNotice(
+                            "Preview kept; no project files were changed.",
+                          );
+                          return;
+                        }
+                        const files = agents.map((agent) => ({
+                          path:
+                            agent.role === "frontend"
+                              ? ".codex/agents/orchestra_frontend.toml"
+                              : ".codex/agents/orchestra_engineer.toml",
+                          content: renderAgentToml(agent, agent.modelId ?? ""),
+                        }));
+                        files.push({
+                          path: ".codex/skills/orchestra-routing/SKILL.md",
+                          content: renderRoutingSkill(),
+                        });
+                        const result = await invokeCommand<{
+                          backups?: Array<{
+                            target: string;
+                            backupPath?: string;
+                          }>;
+                        }>("apply_managed_changes", {
+                          path: existing,
+                          block,
+                          files,
+                          confirm: true,
+                        });
+                        onSnapshot({
+                          ...snapshot,
+                          backups: [
+                            ...(result.backups ?? []).map((backup, index) => ({
+                              id: `backup-${Date.now()}-${index}`,
+                              target: backup.target,
+                              backupPath: backup.backupPath,
+                              createdAt: new Date().toISOString(),
+                              reason: "before-write" as const,
+                              restorable: true,
+                              redacted: true,
+                            })),
+                            ...snapshot.backups,
+                          ],
+                        });
+                        onNotice("Team files applied atomically with backups.");
+                        onNavigate("diagnostics");
+                      } catch (cause) {
+                        onNotice(
+                          cause instanceof Error
+                            ? cause.message
+                            : "The managed write was not applied.",
+                        );
+                      } finally {
+                        setApplying(false);
+                      }
+                    })();
                   }}
                 >
-                  Open diagnostics <span>→</span>
+                  {applying ? "Applying…" : "Apply reviewed files"}{" "}
+                  <span>→</span>
                 </button>
               )}
             </div>
@@ -1508,14 +1633,40 @@ function Advanced({
 }) {
   const [bundle, setBundle] = useState<string | null>(null);
   async function operation(operation: "update-check" | "update" | "rollback") {
-    const result = await invokeCommand<{ message?: string; status?: string }>(
-      "router_operation",
-      { operation },
-    );
-    onNotice(
-      result.message ??
-        `Router operation ${operation} completed in fixture mode.`,
-    );
+    if (
+      (operation === "update" || operation === "rollback") &&
+      !window.confirm(
+        operation === "update"
+          ? "Stage the pinned Router update? A backup and health gate are required."
+          : "Prepare Router rollback using the stored rollback reference?",
+      )
+    ) {
+      onNotice("Operation cancelled; no Router state was changed.");
+      return;
+    }
+    try {
+      const result = await invokeCommand<{
+        message?: string;
+        status?: string;
+        ok?: boolean;
+        phase?: string;
+      }>("router_operation", {
+        operation,
+        confirm: operation === "update" || operation === "rollback",
+      });
+      onNotice(
+        result.message ??
+          (result.ok === false
+            ? `Router operation ${operation} stopped during ${result.phase ?? "validation"}.`
+            : `Router operation ${operation} completed.`),
+      );
+    } catch (cause) {
+      onNotice(
+        cause instanceof Error
+          ? cause.message
+          : `Router operation ${operation} failed.`,
+      );
+    }
   }
   async function exportBundle() {
     const result = await invokeCommand("export_support_bundle");
@@ -1523,6 +1674,34 @@ function Advanced({
     onNotice(
       "Redacted support bundle prepared in memory; no secrets or prompts included.",
     );
+  }
+  async function restoreBackup(backup: OrchestraSnapshot["backups"][number]) {
+    if (!backup.backupPath) {
+      onNotice("This backup has no local restore path available.");
+      return;
+    }
+    if (
+      !window.confirm(
+        `Restore ${backup.target} from its stored Orchestra backup?`,
+      )
+    ) {
+      onNotice("Restore cancelled; no files were changed.");
+      return;
+    }
+    try {
+      await invokeCommand("restore_backup", {
+        target: backup.target,
+        backup: backup.backupPath,
+        confirm: true,
+      });
+      onNotice("Backup restored atomically; a rollback backup was retained.");
+    } catch (cause) {
+      onNotice(
+        cause instanceof Error
+          ? cause.message
+          : "The backup could not be restored.",
+      );
+    }
   }
   return (
     <div className="view-stack">
@@ -1595,6 +1774,14 @@ function Advanced({
               <Badge tone={backup.restorable ? "good" : "bad"}>
                 {backup.restorable ? "restorable" : "unavailable"}
               </Badge>
+              {backup.restorable && backup.backupPath && (
+                <button
+                  className="text-button danger-button"
+                  onClick={() => void restoreBackup(backup)}
+                >
+                  Restore
+                </button>
+              )}
             </div>
           ))}
         </section>

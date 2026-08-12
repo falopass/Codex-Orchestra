@@ -1,7 +1,7 @@
 # Backlog
 
 - Windows installer/MSI signing and update channel.
-- SQLite persistence in Rust once the native build environment is available.
+- SQLite persistence in Rust is implemented; remaining work is migration/versioning and native packaging validation.
 - Immutable upstream commit verification against a signed release/tag.
 - Full Codex App Server stdio activity panel after the stable protocol surface is locked.
 - Read-only Orchestra MCP server for health/usage/sync.

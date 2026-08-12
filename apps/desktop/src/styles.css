@@ -1117,7 +1117,8 @@ button {
   margin: 27px 0;
 }
 .detail-grid label,
-.wide-label {
+.wide-label,
+.field-wide {
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -1131,7 +1132,8 @@ button {
 }
 .detail-grid input,
 .detail-grid select,
-.wide-label input {
+.wide-label input,
+.field-wide input {
   width: 100%;
   padding: 10px 11px;
   border: 1px solid var(--line);
@@ -1148,7 +1150,8 @@ button {
 }
 .detail-grid input:focus,
 .detail-grid select:focus,
-.wide-label input:focus {
+.wide-label input:focus,
+.field-wide input:focus {
   border-color: var(--cyan);
 }
 .detail-section {

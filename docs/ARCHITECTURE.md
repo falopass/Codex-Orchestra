@@ -20,7 +20,7 @@ flowchart LR
 ## Layers
 
 - `apps/desktop/src`: React presentation, navigation and honest states. It calls one adapter and never concatenates shell commands.
-- `apps/desktop/src-tauri/src`: Rust boundary for executable detection, path validation, process arguments, redaction, atomic writes, backups and rollback.
+- `apps/desktop/src-tauri/src`: Rust boundary for executable detection, path validation, process arguments, redaction, SQLite state, atomic writes, backups and rollback.
 - `packages/contracts`: shared domain types and pure functions used by renderer and tests.
 - `templates`: generated Codex agents, skill and managed AGENTS block.
 - `engine`: router lifecycle contract and upstream lock notes.
@@ -28,6 +28,8 @@ flowchart LR
 ## Domain concepts
 
 `CodexInstall`, `RouterInstall`, `Provider`, `Model`, `ModelBinding`, `AgentDefinition`, `ProjectProfile`, `RoutingPolicy`, `HealthReport`, `UsageEvent`, `CostBreakdown`, `Backup`, `ManagedConfig` and `UpdatePlan` are explicit contracts. A logical binding resolves against the live catalog; a UI label is not proof that a provider is authenticated.
+
+SQLite lives under the local Orchestra data root (`CODEX_ORCHESTRA_DATA_DIR` for isolated tests, otherwise the OS local application-data directory). It stores project profiles, health history, usage events and redacted backup metadata only. It never stores credential values, prompts, responses or session files.
 
 ## UI direction
 
