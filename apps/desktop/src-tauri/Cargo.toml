@@ -1,0 +1,19 @@
+[package]
+name = "codex-orchestra"
+version = "0.1.0"
+description = "Codex Orchestra local control plane"
+authors = ["Codex Orchestra"]
+edition = "2021"
+build = "build.rs"
+
+[lib]
+name = "codex_orchestra_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

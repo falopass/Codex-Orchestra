@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Codex Orchestra — Master Build Plan</title>
+<style>
+  :root{
+    --bg:#090b10; --panel:#11151d; --panel2:#151b25; --line:#263042;
+    --text:#eef2f7; --muted:#9aa6b6; --soft:#c6d0dd; --accent:#7dd3fc;
+    --accent2:#a78bfa; --good:#86efac; --warn:#fde68a; --bad:#fca5a5;
+    --code:#07090d; --shadow:0 20px 50px rgba(0,0,0,.28);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; color:var(--text); background:
+      radial-gradient(circle at 10% -10%,rgba(125,211,252,.12),transparent 34%),
+      radial-gradient(circle at 100% 0%,rgba(167,139,250,.11),transparent 28%),
+      var(--bg);
+    font:15px/1.62 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .layout{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:100vh}
+  aside{
+    position:sticky;top:0;height:100vh;overflow:auto;padding:28px 20px;
+    border-right:1px solid var(--line);background:rgba(9,11,16,.82);backdrop-filter:blur(18px)
+  }
+  .brand{display:flex;gap:12px;align-items:center;margin-bottom:22px}
+  .mark{
+    width:38px;height:38px;border:1px solid #3d4a60;border-radius:12px;
+    display:grid;place-items:center;background:linear-gradient(145deg,#182234,#0b1018);
+    box-shadow:var(--shadow);font-weight:900;color:var(--accent)
+  }
+  .brand h1{font-size:16px;margin:0;letter-spacing:.02em}
+  .brand p{margin:1px 0 0;color:var(--muted);font-size:12px}
+  nav a{
+    display:block;padding:8px 10px;margin:3px 0;border-radius:8px;color:#b9c4d2;font-size:13px
+  }
+  nav a:hover{background:#151b25;color:white;text-decoration:none}
+  .aside-note{margin-top:24px;padding:12px;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:12px;background:#0c1017}
+  main{max-width:1180px;width:100%;padding:56px 64px 120px}
+  section{scroll-margin-top:28px;margin:0 0 58px}
+  .hero{padding:8px 0 20px}
+  .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:var(--accent);font-weight:800}
+  h1.hero-title{font-size:clamp(36px,5vw,66px);line-height:1.02;letter-spacing:-.045em;margin:12px 0 18px;max-width:900px}
+  .hero-lead{font-size:19px;color:#c6d0dd;max-width:900px}
+  .pillbar{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}
+  .pill{padding:7px 11px;border-radius:999px;border:1px solid var(--line);background:#111722;color:#cbd5e1;font-size:12px}
+  h2{font-size:28px;letter-spacing:-.025em;margin:0 0 18px}
+  h3{font-size:19px;margin:26px 0 10px}
+  h4{font-size:15px;margin:22px 0 8px;color:#dce6f2}
+  p{margin:9px 0;color:#c8d2df}
+  .muted{color:var(--muted)}
+  .strong{font-weight:800;color:white}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+  .card{
+    grid-column:span 6;border:1px solid var(--line);border-radius:14px;padding:18px 19px;
+    background:linear-gradient(180deg,rgba(21,27,37,.96),rgba(14,18,25,.96));box-shadow:var(--shadow)
+  }
+  .card.third{grid-column:span 4}
+  .card.full{grid-column:1/-1}
+  .card h3{margin:0 0 7px}
+  .kicker{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:800}
+  .decision{
+    border:1px solid #315065;background:linear-gradient(135deg,rgba(14,40,55,.72),rgba(20,20,36,.72));
+    border-radius:16px;padding:22px;margin:18px 0 24px
+  }
+  .decision b{color:#e9f8ff}
+  ul,ol{padding-left:22px;color:#c8d2df}
+  li{margin:5px 0}
+  code{font-family:"Cascadia Code","SFMono-Regular",Consolas,monospace;font-size:.92em}
+  pre{
+    margin:13px 0;border:1px solid #222d3e;border-radius:12px;background:var(--code);
+    padding:16px 17px;overflow:auto;color:#d8e4f3;line-height:1.5
+  }
+  .diagram{
+    white-space:pre;overflow:auto;font:13px/1.4 "Cascadia Code",Consolas,monospace;
+    color:#dce8f5;background:#080b10;border:1px solid var(--line);border-radius:14px;padding:20px
+  }
+  .callout{border-left:3px solid var(--accent);padding:10px 14px;background:#0e151e;border-radius:0 10px 10px 0;margin:14px 0}
+  .warning{border-left-color:#fbbf24;background:#17150c}
+  .danger{border-left-color:#fb7185;background:#1b1015}
+  .good{border-left-color:#4ade80;background:#0d1711}
+  .phase{
+    border:1px solid var(--line);border-radius:14px;margin:12px 0;background:#0f141c;overflow:hidden
+  }
+  .phase-head{display:flex;align-items:center;gap:12px;padding:15px 16px;border-bottom:1px solid var(--line)}
+  .num{width:30px;height:30px;border-radius:9px;background:#172131;border:1px solid #31425a;display:grid;place-items:center;color:var(--accent);font-weight:900}
+  .phase-body{padding:12px 18px 17px}
+  .check{display:flex;gap:9px;align-items:flex-start;margin:8px 0}
+  .check input{margin-top:5px;accent-color:#38bdf8}
+  .small{font-size:12px}
+  .tag{font-size:11px;padding:2px 7px;border:1px solid #334155;border-radius:999px;color:#cbd5e1;margin-left:5px}
+  .gate{color:var(--good);font-weight:800}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 12px}
+  button{
+    border:1px solid #34445b;background:#151d29;color:#e7eef8;border-radius:9px;
+    padding:8px 11px;cursor:pointer;font-weight:700
+  }
+  button:hover{background:#1d2837}
+  textarea{
+    width:100%;min-height:420px;resize:vertical;border:1px solid var(--line);border-radius:12px;
+    background:#080b10;color:#e5edf7;padding:17px;font:13px/1.55 "Cascadia Code",Consolas,monospace
+  }
+  .status{font-size:12px;color:var(--muted)}
+  .split{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+  hr{border:0;border-top:1px solid var(--line);margin:30px 0}
+  .source{font-size:12px;color:var(--muted);word-break:break-word}
+  .footer{margin-top:80px;border-top:1px solid var(--line);padding-top:24px;color:var(--muted);font-size:12px}
+  @media(max-width:900px){
+    .layout{display:block}.layout aside{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+    nav{display:none}main{padding:34px 20px 80px}.card,.card.third{grid-column:1/-1}.split{grid-template-columns:1fr}
+  }
+  @media print{
+    aside{display:none}.layout{display:block}main{max-width:none;padding:20px}body{background:white;color:black}
+    .card,.phase,.decision,.diagram,pre{box-shadow:none;break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+  <div class="brand">
+    <div class="mark">CO</div>
+    <div><h1>Codex Orchestra</h1><p>Master Build Plan · v1.0</p></div>
+  </div>
+  <nav>
+    <a href="#decision">01 · Decisión de producto</a>
+    <a href="#goals">02 · Objetivos y límites</a>
+    <a href="#architecture">03 · Arquitectura</a>
+    <a href="#components">04 · Componentes</a>
+    <a href="#routing">05 · Routing multi-modelo</a>
+    <a href="#security">06 · Seguridad</a>
+    <a href="#ux">07 · UX del programa</a>
+    <a href="#stack">08 · Stack y repositorio</a>
+    <a href="#integration">09 · Integración Codex Router</a>
+    <a href="#agents">10 · Agentes y skill</a>
+    <a href="#observability">11 · Costos y observabilidad</a>
+    <a href="#testing">12 · Tests y evals</a>
+    <a href="#roadmap">13 · Roadmap ejecutable</a>
+    <a href="#acceptance">14 · Criterios de aceptación</a>
+    <a href="#prompt">15 · Prompt maestro para Codex</a>
+    <a href="#sources">16 · Fuentes técnicas</a>
+  </nav>
+  <div class="aside-note">
+    <b>Uso recomendado:</b><br/>
+    coloca este archivo en la raíz de un repositorio vacío, ábrelo en Codex Desktop y pega el prompt maestro del final.
+  </div>
+</aside>
+
+<main>
+<section class="hero">
+  <div class="eyebrow">Blueprint de implementación · 12 agosto 2026</div>
+  <h1 class="hero-title">Construir un control plane profesional para Codex, Grok y Kimi.</h1>
+  <p class="hero-lead">
+    Este documento define un producto local, privado y liviano para usar <b>GPT‑5.6 Sol como Tech Lead/orquestador</b>,
+    <b>Grok 4.6 como engineer/ejecutor</b> y <b>Kimi K3 como especialista frontend</b>, manteniendo Codex Desktop como
+    superficie principal de trabajo.
+  </p>
+  <div class="pillbar">
+    <span class="pill">Windows-first</span><span class="pill">Tauri 2 + React + TypeScript</span>
+    <span class="pill">Codex Desktop</span><span class="pill">Codex Router</span>
+    <span class="pill">Custom agents</span><span class="pill">Skill local</span>
+    <span class="pill">MCP opcional</span><span class="pill">Sin VS Code</span>
+  </div>
+</section>
+
+<section id="decision">
+  <h2>01 · Decisión de producto</h2>
+  <div class="decision">
+    <div class="kicker">Decisión principal</div>
+    <p><b>No construir una extensión de VS Code ni reemplazar Codex.</b> Construir una aplicación desktop independiente,
+    <b>Codex Orchestra</b>, que actúe como <b>control plane local</b>. Codex seguirá siendo el execution plane y la interfaz
+    donde se conversa con Sol.</p>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <div class="kicker">Aplicación desktop</div>
+      <h3>Orchestra Control Plane</h3>
+      <p>Configura proveedores, roles, agentes, políticas, diagnóstico, costos, actualizaciones y proyectos sin pedir al usuario tocar TOML, JSON o terminal.</p>
+    </div>
+    <div class="card">
+      <div class="kicker">Integración Codex</div>
+      <h3>Skill + agentes + router</h3>
+      <p>La app instala/genera una skill privada de Codex, agentes especializados y la configuración necesaria para que Sol delegue de forma consistente.</p>
+    </div>
+    <div class="card">
+      <div class="kicker">Motor externo</div>
+      <h3>Codex Router como dependencia</h3>
+      <p>No reimplementar en v1 el complejo puente Responses ↔ proveedores. Gestionar una versión fijada de <code>duolahypercho/codex-router</code> y envolverla con una UX propia.</p>
+    </div>
+    <div class="card">
+      <div class="kicker">Futuro</div>
+      <h3>App Server / MCP</h3>
+      <p>Agregar integración profunda de actividad y herramientas sólo después de tener routing, seguridad y agentes estables. App Server por stdio, no WebSocket, para el MVP.</p>
+    </div>
+  </div>
+  <div class="callout good">
+    <b>Por qué esta es la mejor forma:</b> desacopla la UI, la orquestación y los proveedores. Si mañana cambia Grok, Kimi,
+    Codex Router o el modelo root, no hay que reescribir la aplicación completa.
+  </div>
+</section>
+
+<section id="goals">
+  <h2>02 · Objetivos y límites</h2>
+  <div class="grid">
+    <div class="card third"><h3>Objetivo A</h3><p>Un botón para dejar Codex listo con un equipo multi-modelo verificable.</p></div>
+    <div class="card third"><h3>Objetivo B</h3><p>Elegir roles/modelos visualmente y generar la configuración correcta.</p></div>
+    <div class="card third"><h3>Objetivo C</h3><p>Detectar errores antes de que una tarea real queme tiempo o API.</p></div>
+    <div class="card third"><h3>Objetivo D</h3><p>Medir consumo y costo por modelo/rol/proyecto.</p></div>
+    <div class="card third"><h3>Objetivo E</h3><p>Actualizar y revertir router/configuración de forma segura.</p></div>
+    <div class="card third"><h3>Objetivo F</h3><p>Que el usuario trabaje normalmente desde Codex Desktop.</p></div>
+  </div>
+  <h3>No objetivos del MVP</h3>
+  <ul>
+    <li>No construir un IDE.</li>
+    <li>No clonar la interfaz completa de Codex.</li>
+    <li>No implementar nuestro propio proxy multi-provider desde cero.</li>
+    <li>No almacenar API keys en SQLite, JSON, logs ni estado de frontend.</li>
+    <li>No dejar a Kimi y Grok editar indiscriminadamente el mismo conjunto de archivos en paralelo.</li>
+    <li>No depender de funciones experimentales como WebSocket de App Server para operaciones críticas.</li>
+  </ul>
+</section>
+
+<section id="architecture">
+  <h2>03 · Arquitectura objetivo</h2>
+  <div class="diagram">┌───────────────────────────────────────────────────────────────┐
+│                       CODEX DESKTOP                           │
+│                                                               │
+│                 GPT‑5.6 SOL · ROOT / LEAD                     │
+│     requisitos · arquitectura · routing · review · merge      │
+└────────────────────────────┬──────────────────────────────────┘
+                             │
+                    Codex subagents nativos
+                             │
+             ┌───────────────┴────────────────┐
+             │                                │
+             ▼                                ▼
+┌─────────────────────────┐       ┌─────────────────────────────┐
+│  FRONTEND · KIMI K3     │       │ ENGINEER · GROK 4.6        │
+│ UI · UX · React · CSS   │       │ backend · lógica · tests   │
+└────────────┬────────────┘       └──────────────┬──────────────┘
+             │                                   │
+             └──────────────┬────────────────────┘
+                            ▼
+                  ┌──────────────────┐
+                  │   CODEX ROUTER   │
+                  │ local 127.0.0.1  │
+                  └─────────┬────────┘
+                    ┌───────┴────────┐
+                    ▼                ▼
+                Kimi API          xAI API
+
+              ───── CONTROL PLANE PARALELO ─────
+
+┌───────────────────────────────────────────────────────────────┐
+│                    CODEX ORCHESTRA DESKTOP                    │
+│ setup · health · roles · projects · usage · updates · backup │
+└────────────────────────────┬──────────────────────────────────┘
+                             │
+         ┌───────────────────┼─────────────────────────┐
+         ▼                   ▼                         ▼
+  Codex config/agents   Codex Router CLI        Orchestra Skill
+  managed blocks        provider status         routing policy
+</div>
+
+  <h3>Principio de responsabilidad</h3>
+  <p><b>Sol decide.</b> <b>Kimi diseña/implementa frontend.</b> <b>Grok implementa ingeniería general.</b>
+  <b>Orchestra configura y observa.</b> <b>Codex Router transporta.</b></p>
+
+  <div class="callout">
+    La aplicación no necesita leer el razonamiento privado de los modelos ni meterse dentro de cada token. Debe controlar
+    configuración, identidad del worker, permisos, estado, métricas y resultados observables.
+  </div>
+</section>
+
+<section id="components">
+  <h2>04 · Componentes del sistema</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="kicker">1 · Desktop</div><h3>Orchestra UI</h3>
+      <ul><li>Dashboard</li><li>Onboarding</li><li>Team Builder</li><li>Projects</li><li>Health</li><li>Usage</li><li>Backups/Updates</li></ul>
+    </div>
+    <div class="card">
+      <div class="kicker">2 · Rust core</div><h3>orchestra-core</h3>
+      <ul><li>Detección de Codex</li><li>Invocación segura de procesos</li><li>Escritura atómica de config</li><li>Backups</li><li>Windows ACL/path handling</li></ul>
+    </div>
+    <div class="card">
+      <div class="kicker">3 · Engine manager</div><h3>codex-router adapter</h3>
+      <ul><li>Instalar versión fijada</li><li>doctor/status</li><li>providers</li><li>curate models</li><li>update/rollback</li></ul>
+    </div>
+    <div class="card">
+      <div class="kicker">4 · Codex integration</div><h3>Agents + Skill</h3>
+      <ul><li><code>frontend.toml</code></li><li><code>engineer.toml</code></li><li><code>SKILL.md</code></li><li>bloque administrado en <code>AGENTS.md</code></li></ul>
+    </div>
+    <div class="card">
+      <div class="kicker">5 · State</div><h3>SQLite local</h3>
+      <p>Sólo preferencias, proyectos, roles, costos calculados, health runs y metadatos. <b>Nunca secretos.</b></p>
+    </div>
+    <div class="card">
+      <div class="kicker">6 · Optional</div><h3>Orchestra MCP</h3>
+      <p>Fase posterior: expone a Sol herramientas de health, usage, sync de agentes, scope planning y diagnóstico.</p>
+    </div>
+  </div>
+</section>
+
+<section id="routing">
+  <h2>05 · Routing multi-modelo</h2>
+  <div class="split">
+    <div>
+      <h3>Política por defecto</h3>
+      <pre><code>ROOT / ORCHESTRATOR
+model: GPT-5.6 Sol
+responsabilidades:
+  - entender la solicitud
+  - inspeccionar arquitectura
+  - definir contratos compartidos
+  - decidir si delegar
+  - integrar
+  - revisar
+  - validar resultado final
+
+FRONTEND
+model: Kimi K3
+responsabilidades:
+  - UI / UX
+  - React / Next / RN
+  - layout / CSS / responsive
+  - accesibilidad
+  - fidelidad visual
+  - componentes y animaciones
+
+ENGINEER
+model: Grok 4.6
+responsabilidades:
+  - backend
+  - APIs
+  - base de datos
+  - auth
+  - lógica de negocio
+  - refactors
+  - integraciones
+  - tests y debugging</code></pre>
+    </div>
+    <div>
+      <h3>Reglas de decisión</h3>
+      <ul>
+        <li><b>Trivial:</b> Sol puede resolver directamente.</li>
+        <li><b>Frontend visual:</b> Kimi.</li>
+        <li><b>Backend/lógica:</b> Grok.</li>
+        <li><b>Full-stack:</b> Sol define contrato y delega por ownership.</li>
+        <li><b>Arquitectura delicada:</b> Sol conserva la tarea.</li>
+        <li><b>Bug bloqueado:</b> un retry al mismo worker; luego escala a Sol.</li>
+        <li><b>Review final:</b> siempre root.</li>
+      </ul>
+      <div class="callout warning"><b>Paralelismo:</b> sólo cuando los scopes de escritura no se solapan. Si se solapan, ejecutar secuencial o usar worktrees.</div>
+    </div>
+  </div>
+
+  <h3>Ownership de archivos</h3>
+  <pre><code>{
+  "frontend": {
+    "prefer": ["app/**", "src/app/**", "components/**", "src/components/**", "styles/**", "public/**"],
+    "denyByDefault": ["db/**", "server/**", "infra/**"]
+  },
+  "engineer": {
+    "prefer": ["server/**", "api/**", "db/**", "services/**", "tests/**", "infra/**"],
+    "denyByDefault": ["design/**"]
+  },
+  "shared": ["package.json", "types/**", "schemas/**", ".env*", "migrations/**"]
+}</code></pre>
+  <p class="muted">Los paths son hints/política, no supuestos universales. Orchestra debe permitir que cada proyecto los edite.</p>
+</section>
+
+<section id="security">
+  <h2>06 · Seguridad y límites</h2>
+  <div class="grid">
+    <div class="card third"><h3>Secrets</h3><p>Delegar almacenamiento de credenciales a Codex Router/almacén seguro del SO. Orchestra sólo conoce <i>configured / missing / invalid</i>.</p></div>
+    <div class="card third"><h3>Config</h3><p>Escritura atómica, backup previo, bloque administrado con marcadores, nunca sobreescribir config ajena completa.</p></div>
+    <div class="card third"><h3>Procesos</h3><p>Argument arrays, sin concatenar shell strings. Sanitizar paths. No ejecutar comandos arbitrarios provenientes del UI.</p></div>
+    <div class="card third"><h3>Red</h3><p>Servicios locales bind a <code>127.0.0.1</code>. Sin CORS público. No exponer puertos a LAN.</p></div>
+    <div class="card third"><h3>Logs</h3><p>Redacción de secrets y capability URLs. Opción de no guardar prompts/respuestas.</p></div>
+    <div class="card third"><h3>Updates</h3><p>Pin de versión/commit, checksum cuando aplique, health check antes de promover update y rollback automático.</p></div>
+  </div>
+  <div class="callout danger">
+    <b>Regla dura:</b> Orchestra nunca debe pedir una API key dentro de un chat de Codex. Si hay que introducir una key,
+    la app abre un input local seguro o invoca el helper oficial/seguro del router.
+  </div>
+</section>
+
+<section id="ux">
+  <h2>07 · UX del programa</h2>
+  <h3>Pantalla 1 · Home</h3>
+  <ul>
+    <li>Codex Desktop: detectado / versión / autenticado.</li>
+    <li>Codex Router: running / versión fijada / update disponible.</li>
+    <li>Kimi: conectado / modelo / última prueba.</li>
+    <li>xAI: conectado / Grok 4.6 / última prueba.</li>
+    <li>Equipo activo: Sol → Kimi + Grok.</li>
+    <li>Botón <b>Run full health check</b>.</li>
+  </ul>
+
+  <h3>Pantalla 2 · Team Builder</h3>
+  <p>Tres tarjetas editables: Root, Frontend, Engineer. Selector de modelo, effort, descripción, permisos, paths y política de retry.</p>
+
+  <h3>Pantalla 3 · Projects</h3>
+  <p>Agregar repo local. Orchestra detecta stack y genera un perfil. Preview de cambios antes de escribir:
+    <code>.codex/agents/</code>, skill/config de proyecto y bloque de <code>AGENTS.md</code>.</p>
+
+  <h3>Pantalla 4 · Diagnostics</h3>
+  <p>Doctor del router, catálogo, subagents disponibles, tool-call test, compaction test, real Codex agent check, proceso y puertos.</p>
+
+  <h3>Pantalla 5 · Usage</h3>
+  <p>Tokens/costo estimado por día, modelo, provider, proyecto y rol. Presupuesto mensual y alertas visuales. Sin telemetría externa.</p>
+
+  <h3>Pantalla 6 · Advanced</h3>
+  <p>Backups, rollback, logs redacted, paths, engine pin, export/import de perfil, feature flags y modo experimental App Server.</p>
+</section>
+
+<section id="stack">
+  <h2>08 · Stack y estructura del repositorio</h2>
+  <div class="decision">
+    <b>Tauri 2</b> en lugar de Electron: menor consumo de memoria y una capa Rust adecuada para procesos, archivos,
+    Windows, permisos y empaquetado. Frontend React + TypeScript para velocidad de desarrollo.
+  </div>
+  <pre><code>codex-orchestra/
+├─ apps/
+│  └─ desktop/
+│     ├─ src/                       # React UI
+│     └─ src-tauri/
+│        ├─ src/
+│        │  ├─ commands/
+│        │  ├─ codex/
+│        │  ├─ router/
+│        │  ├─ projects/
+│        │  ├─ config/
+│        │  ├─ usage/
+│        │  └─ security/
+│        └─ tauri.conf.json
+│
+├─ packages/
+│  ├─ contracts/                    # TS types + JSON schemas
+│  └─ ui/                           # componentes compartidos
+│
+├─ templates/
+│  ├─ agents/
+│  │  ├─ frontend.toml.hbs
+│  │  └─ engineer.toml.hbs
+│  ├─ skill/
+│  │  └─ SKILL.md.hbs
+│  └─ agents-md/
+│     └─ managed-block.md.hbs
+│
+├─ engine/
+│  └─ README.md                     # estrategia de codex-router, no secrets
+│
+├─ evals/
+│  ├─ routing/
+│  ├─ agent-capability/
+│  └─ fixtures/
+│
+├─ docs/
+│  ├─ ARCHITECTURE.md
+│  ├─ SECURITY.md
+│  ├─ OPERATIONS.md
+│  └─ DECISIONS/
+│
+├─ scripts/
+│  └─ dev/
+│
+├─ ORCHESTRA_BUILD_STATUS.md
+├─ AGENTS.md
+└─ README.md</code></pre>
+
+  <h3>Estado local</h3>
+  <pre><code>%APPDATA%\CodexOrchestra\
+├─ orchestra.db
+├─ backups\
+├─ logs\
+├─ generated\
+└─ settings.json
+
+%LOCALAPPDATA%\CodexOrchestra\
+└─ engine\
+   └─ codex-router\   # managed checkout / release pin</code></pre>
+</section>
+
+<section id="integration">
+  <h2>09 · Integración con Codex Router</h2>
+  <p>Tratar al router como <b>engine externo con adapter</b>. Nunca dispersar comandos del router por todo el código.</p>
+  <pre><code>trait RouterEngine {
+  detect() -> EngineStatus
+  install(version) -> Result
+  doctor() -> HealthReport
+  list_providers() -> Provider[]
+  enable_provider(id) -> Result
+  provider_credential_status(id) -> CredentialStatus
+  list_models() -> Model[]
+  curate_model(provider, model, metadata) -> Result
+  set_subagent_mode(mode) -> Result
+  enable_subagent(model) -> Result
+  refresh_catalog() -> Result
+  update(target) -> Result
+  rollback() -> Result
+}</code></pre>
+
+  <h3>Secuencia de onboarding</h3>
+  <ol>
+    <li>Detectar Codex y versión.</li>
+    <li>Verificar login nativo de OpenAI sin leer credenciales.</li>
+    <li>Instalar/validar Codex Router en una versión fijada.</li>
+    <li>Configurar Kimi API y xAI API mediante flujo local seguro.</li>
+    <li>Confirmar que <code>kimi-api/kimi-k3</code> existe.</li>
+    <li>Confirmar/curar <code>grok-api/grok-4.6</code> si aún no viene en registry.</li>
+    <li>Ejecutar compatibilidad real con tool use.</li>
+    <li>Activar sólo Kimi y Grok como candidates de subagent.</li>
+    <li>Generar agentes de rol.</li>
+    <li>Reiniciar Codex cuando el catálogo lo requiera.</li>
+    <li>Ejecutar smoke test Sol → Kimi y Sol → Grok.</li>
+  </ol>
+
+  <div class="callout warning">
+    <b>No acoplar el producto al slug para siempre.</b> Los slugs de modelos cambian. Guardar un <code>ModelBinding</code>
+    lógico (<code>frontend</code>, <code>engineer</code>) y resolverlo contra el catálogo actual.
+  </div>
+</section>
+
+<section id="agents">
+  <h2>10 · Agentes y skill de Codex</h2>
+  <h3>Agente frontend generado</h3>
+  <pre><code>name = "orchestra_frontend"
+description = "Frontend/UI specialist for delegated visual and client-side implementation."
+
+model_provider = "codex-router"
+model = "kimi-api/kimi-k3"
+model_reasoning_effort = "max"
+sandbox_mode = "workspace-write"
+
+developer_instructions = """
+Complete only the frontend/UI task delegated by the root.
+Inspect the existing design system before editing.
+Own visual hierarchy, layout, responsive behavior, components,
+accessibility, interaction quality, and frontend verification.
+Respect contracts defined by root.
+Do not redesign backend contracts unless a blocker requires escalation.
+Run relevant lint/typecheck/tests.
+Return a concise summary, changed files, checks, and remaining risks.
+"""</code></pre>
+
+  <h3>Agente engineer generado</h3>
+  <pre><code>name = "orchestra_engineer"
+description = "General software engineer for bounded implementation and debugging."
+
+model_provider = "codex-router"
+model = "grok-api/grok-4.6"
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+
+developer_instructions = """
+Complete only the bounded engineering task delegated by the root.
+Own backend, API, data, integration, refactor, debugging and test work.
+Follow root-defined interfaces and repository instructions.
+Avoid unrelated architectural changes.
+Run relevant tests and verification before returning.
+Return a concise summary, changed files, checks, and remaining risks.
+"""</code></pre>
+
+  <h3>Skill privada <code>orchestra-routing</code></h3>
+  <pre><code>---
+name: orchestra-routing
+description: Route substantial coding work to Orchestra's configured specialist subagents.
+---
+
+# Orchestra routing policy
+
+The current Codex thread is the root technical lead.
+
+Use the frontend agent for substantial visual/frontend work.
+Use the engineer agent for substantial backend, data, integration,
+testing, refactoring, or general implementation work.
+
+For full-stack work:
+1. Inspect the repository and define shared contracts first.
+2. Determine write scopes.
+3. Delegate in parallel only when write scopes are disjoint.
+4. Otherwise delegate sequentially.
+5. Wait for delegated results before integration.
+6. Root owns shared files, final review, integration and final verification.
+
+Do not delegate trivial changes merely to use an agent.
+Retry a failed worker at most once when the failure is transient or clearly repairable.
+Escalate unresolved ambiguity or architectural conflict to root.
+Never expose provider credentials to a subagent prompt.
+</code></pre>
+
+  <h3>Bloque administrado de <code>AGENTS.md</code></h3>
+  <pre><code>&lt;!-- BEGIN CODEX-ORCHESTRA MANAGED --&gt;
+For substantial engineering work, load the orchestra-routing skill.
+
+Project ownership:
+- frontend: app/**, src/app/**, components/**, src/components/**, styles/**
+- engineer: server/**, api/**, db/**, services/**, tests/**
+- shared/root-owned: package.json, shared schemas/types, environment config
+
+Parallel write delegation is allowed only for disjoint scopes.
+The root thread owns final integration and validation.
+&lt;!-- END CODEX-ORCHESTRA MANAGED --&gt;</code></pre>
+</section>
+
+<section id="observability">
+  <h2>11 · Costos y observabilidad</h2>
+  <p>El panel no necesita prometer contabilidad perfecta. Debe separar <b>provider-reported usage</b> de <b>estimaciones locales</b>.</p>
+  <div class="grid">
+    <div class="card third"><h3>Usage raw</h3><p>Leer eventos del router cuando estén disponibles. Conservar valores originales.</p></div>
+    <div class="card third"><h3>Cost engine</h3><p>Pricing editable/versionado por modelo y fecha. Nunca ocultar cuando un precio es estimado.</p></div>
+    <div class="card third"><h3>Budgets</h3><p>Presupuesto mensual, warning 70/90%, sin cortar ejecuciones automáticamente en MVP.</p></div>
+  </div>
+  <pre><code>UsageEvent {
+  timestamp
+  project_id?
+  provider
+  model
+  role?              // root | frontend | engineer | unknown
+  input_tokens?
+  cached_input_tokens?
+  output_tokens?
+  provider_cost?
+  estimated_cost?
+  source             // provider | router | estimate
+  run_id?
+}</code></pre>
+</section>
+
+<section id="testing">
+  <h2>12 · Tests y evals</h2>
+  <h3>Unit tests</h3>
+  <ul>
+    <li>Render de agentes y managed blocks.</li>
+    <li>Parser/status del router.</li>
+    <li>Redacción de secretos.</li>
+    <li>Backups y rollback.</li>
+    <li>Resolución model binding → slug.</li>
+    <li>Cost engine.</li>
+  </ul>
+
+  <h3>Integration tests</h3>
+  <ul>
+    <li>Fake <code>CODEX_HOME</code>: nunca tocar la instalación real durante test.</li>
+    <li>Router adapter con fixture de stdout/stderr.</li>
+    <li>Write atomic + rollback ante fallo.</li>
+    <li>Windows path con espacios y caracteres no ASCII.</li>
+  </ul>
+
+  <h3>Live evals con costo explícito</h3>
+  <ul>
+    <li>Kimi puede ejecutar una herramienta real y leer el resultado.</li>
+    <li>Grok puede ejecutar una herramienta real y leer el resultado.</li>
+    <li>Sol puede spawn Kimi por tipo de agente.</li>
+    <li>Sol puede spawn Grok por tipo de agente.</li>
+    <li>Full-stack fixture: Sol divide correctamente la tarea.</li>
+    <li>El worker no se sale de scope.</li>
+    <li>Compaction/replay no rompe el handoff.</li>
+  </ul>
+
+  <div class="callout">
+    Cada live eval debe mostrar antes: <b>qué proveedor se cobrará</b>, <b>qué modelo</b> y <b>qué test se ejecutará</b>.
+  </div>
+</section>
+
+<section id="roadmap">
+  <h2>13 · Roadmap ejecutable</h2>
+
+  <div class="phase">
+    <div class="phase-head"><div class="num">0</div><div><b>Research lock + repo skeleton</b><div class="small muted">No coding productivo antes de dejar interfaces y riesgos documentados.</div></div></div>
+    <div class="phase-body">
+      <label class="check"><input type="checkbox"/> Crear monorepo, ADRs, README y status file.</label>
+      <label class="check"><input type="checkbox"/> Registrar versión actual de Codex y Codex Router soportada.</label>
+      <label class="check"><input type="checkbox"/> Definir contratos <code>RouterEngine</code>, <code>CodexInstall</code>, <code>ProjectProfile</code>, <code>ModelBinding</code>.</label>
+      <p class="gate">Gate 0: proyecto compila, tests vacíos corren, arquitectura y límites están documentados.</p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><div class="num">1</div><div><b>Tauri shell + detection</b><div class="small muted">Primera app usable sin modificar Codex.</div></div></div>
+    <div class="phase-body">
+      <label class="check"><input type="checkbox"/> Home UI y theme.</label>
+      <label class="check"><input type="checkbox"/> Detectar Codex, versión, CODEX_HOME y login status.</label>
+      <label class="check"><input type="checkbox"/> Detectar router existente y puertos.</label>
+      <label class="check"><input type="checkbox"/> Logging local redacted.</label>
+      <p class="gate">Gate 1: abrir app y obtener diagnóstico local sin mutaciones.</p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><div class="num">2</div><div><b>Managed Router Engine</b><div class="small muted">Orchestra puede instalar, reparar y revertir la capa de routing.</div></div></div>
+    <div class="phase-body">
+      <label class="check"><input type="checkbox"/> Adapter completo.</label>
+      <label class="check"><input type="checkbox"/> Install pin + backup + doctor.</label>
+      <label class="check"><input type="checkbox"/> Provider status Kimi/xAI.</label>
+      <label class="check"><input type="checkbox"/> Curation de Grok 4.6 si hace falta.</label>
+      <p class="gate">Gate 2: router healthy, native GPT sigue funcionando, Kimi y Grok aparecen en catálogo.</p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><div class="num">3</div><div><b>Team Builder + generated agents</b><div class="small muted">Primera versión que cumple la meta central.</div></div></div>
+    <div class="phase-body">
+      <label class="check"><input type="checkbox"/> Root/Frontend/Engineer cards.</label>
+      <label class="check"><input type="checkbox"/> Generar agentes project/global de forma atómica.</label>
+      <label class="check"><input type="checkbox"/> Instalar skill routing.</label>
+      <label class="check"><input type="checkbox"/> Managed block de AGENTS.md con preview/diff.</label>
+      <p class="gate">Gate 3: Sol puede delegar a Kimi y Grok desde Codex Desktop.</p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><div class="num">4</div><div><b>Diagnostics + live agent checks</b><div class="small muted">Dejar de confiar en “aparece en el picker”.</div></div></div>
+    <div class="phase-body">
+      <label class="check"><input type="checkbox"/> Agent capability check.</label>
+      <label class="check"><input type="checkbox"/> Smoke Sol→Kimi y Sol→Grok.</label>
+      <label class="check"><input type="checkbox"/> Health history y export de bundle redacted.</label>
+      <p class="gate">Gate 4: ambos workers completan una tarea tool-driven real dos veces consecutivas.</p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><div class="num">5</div><div><b>Usage + budgets</b><div class="small muted">Medir si la estrategia realmente ahorra dinero.</div></div></div>
+    <div class="phase-body">
+      <label class="check"><input type="checkbox"/> Import/stream usage events.</label>
+      <label class="check"><input type="checkbox"/> Cost calculator editable.</label>
+      <label class="check"><input type="checkbox"/> Filtros modelo/rol/proyecto.</label>
+      <p class="gate">Gate 5: dashboard distingue valores reportados de estimados.</p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><div class="num">6</div><div><b>Safe parallelism</b><div class="small muted">Sólo después de demostrar que el routing simple es estable.</div></div></div>
+    <div class="phase-body">
+      <label class="check"><input type="checkbox"/> Scope planner.</label>
+      <label class="check"><input type="checkbox"/> Conflicto de paths → secuencial.</label>
+      <label class="check"><input type="checkbox"/> Worktree experimental para scopes write-heavy paralelos.</label>
+      <p class="gate">Gate 6: fixture full-stack paralelo sin pérdida de cambios ni colisiones.</p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><div class="num">7</div><div><b>Optional deep integration</b><div class="small muted">No bloquear el MVP por esto.</div></div></div>
+    <div class="phase-body">
+      <label class="check"><input type="checkbox"/> Orchestra MCP para health/usage/sync.</label>
+      <label class="check"><input type="checkbox"/> App Server stdio para live activity o pruebas controladas.</label>
+      <label class="check"><input type="checkbox"/> Empaquetar skill + MCP como plugin privado si aporta valor.</label>
+      <p class="gate">Gate 7: integración añade valor sin convertir Orchestra en un segundo Codex.</p>
+    </div>
+  </div>
+</section>
+
+<section id="acceptance">
+  <h2>14 · Criterios de aceptación del MVP</h2>
+  <div class="grid">
+    <div class="card full">
+      <ol>
+        <li>Instalación Windows sin necesidad de VS Code.</li>
+        <li>El usuario puede completar setup sin editar archivos manualmente.</li>
+        <li>GPT‑5.6 Sol nativo sigue disponible y operativo en Codex.</li>
+        <li>Kimi K3 y Grok 4.6 están configurados, autenticados y verificados.</li>
+        <li>Hay un agente <b>frontend</b> pinneado a Kimi y un <b>engineer</b> pinneado a Grok.</li>
+        <li>Sol puede delegar a ambos y recoger resultados.</li>
+        <li>Orchestra puede aplicar y revertir sus cambios sin destruir configuración previa.</li>
+        <li>Ningún secreto aparece en logs, DB, HTML, prompts ni archivos de proyecto.</li>
+        <li>El dashboard health detecta un router caído, una key inválida y un modelo ausente.</li>
+        <li>El usuario puede ver consumo/costo estimado por modelo.</li>
+        <li>Un update fallido del router se puede revertir.</li>
+        <li>La app permanece pequeña y con consumo razonable de RAM en idle.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section id="prompt">
+  <h2>15 · Prompt maestro para ejecutar este plan dentro de Codex</h2>
+  <p>Coloca este HTML en la raíz del repo vacío. Luego abre el repo con Codex Desktop usando GPT‑5.6 Sol y pega lo siguiente.</p>
+  <div class="toolbar">
+    <button onclick="copyPrompt()">Copiar prompt maestro</button>
+    <span id="copyStatus" class="status"></span>
+  </div>
+  <textarea id="masterPrompt" spellcheck="false">Actúa como principal engineer y tech lead de este proyecto.
+
+Lee COMPLETO el archivo `CODEX_ORCHESTRA_MASTER_BUILD_PLAN.html` de la raíz antes de editar nada. Trátalo como la especificación canónica del producto. No implementes sólo una demo visual: el objetivo es una aplicación Windows local y profesional, mantenible y segura.
+
+REGLAS DE EJECUCIÓN
+
+1. Empieza por la Fase 0 del roadmap y avanza por gates. No saltes fases sólo para mostrar progreso.
+2. Antes de implementar, inspecciona el entorno real disponible: sistema operativo, repo, versión de Codex, toolchain, Git y cualquier configuración aplicable. No inventes capacidades.
+3. Para cualquier integración con Codex/OpenAI, verifica la documentación oficial actual cuando una decisión dependa de una API, formato o feature que pueda haber cambiado.
+4. Para Codex Router, inspecciona el repositorio upstream y su documentación/código actual antes de implementar el adapter. No copies comandos antiguos por memoria.
+5. Mantén `ORCHESTRA_BUILD_STATUS.md` con:
+   - fase actual;
+   - decisiones tomadas;
+   - archivos creados/modificados;
+   - checks ejecutados;
+   - bloqueos;
+   - próximos pasos;
+   - riesgos abiertos.
+6. Crea ADRs para decisiones estructurales importantes.
+7. No almacenes ni solicites API keys en el repo, logs o prompts. Cuando llegue una acción que requiera una credencial real, implementa primero toda la UI/flujo seguro y detente sólo en el punto exacto donde yo deba autenticarme localmente.
+8. No modifiques destructivamente mi `~/.codex` / `%USERPROFILE%\.codex` durante desarrollo. Usa fixtures y un `CODEX_HOME` temporal para tests. Cualquier prueba sobre mi instalación real requiere primero preview, backup y una acción explícita de setup.
+9. Toda escritura de configuración debe ser atómica, con backup, managed markers y rollback.
+10. No construyas nuestro propio multi-provider proxy en el MVP. Usa una capa `RouterEngine` que envuelva una versión fijada y verificable de `duolahypercho/codex-router`.
+11. La arquitectura objetivo es:
+    - Codex Desktop = execution surface.
+    - GPT-5.6 Sol = root/orchestrator/reviewer.
+    - Kimi K3 = frontend specialist.
+    - Grok 4.6 = engineer/executor.
+    - Codex Router = provider/routing engine.
+    - Codex Orchestra = control plane.
+12. El producto desktop debe ser Tauri 2 + React + TypeScript, Windows-first. Mantén la lógica sensible de procesos/configuración en Rust, no en el renderer.
+13. Diseña interfaces limpias entre UI, Codex adapter y RouterEngine. Evita llamadas directas a comandos del router dispersas por componentes React.
+14. Implementa tests desde el comienzo. Los tests no pueden depender de credenciales reales salvo los live evals explícitos.
+15. Los live evals deben indicar qué provider/model se cobrará antes de ejecutarse y nunca correr como parte de tests normales.
+16. El MVP debe preservar GPT nativo y permitir revertir completamente los cambios administrados por Orchestra.
+17. No agregues dependencias grandes sin justificar por qué son necesarias.
+18. No hagas scope creep. Si detectas una mejora interesante que no pertenece al gate actual, agrégala a `docs/BACKLOG.md`.
+19. Antes de cerrar cada gate:
+    - corre format/lint/typecheck/tests relevantes;
+    - revisa el diff;
+    - confirma que no hay secrets;
+    - actualiza `ORCHESTRA_BUILD_STATUS.md`.
+20. Continúa de forma autónoma dentro de cada gate. Pregúntame sólo cuando falte una decisión de producto no resuelta por el HTML, una credencial/acción externa, o una operación destructiva.
+
+PRIMERA ENTREGA ESPERADA
+
+Completa Fase 0 y Fase 1:
+- skeleton del repo;
+- Tauri desktop shell;
+- arquitectura/ADRs;
+- contratos iniciales;
+- detección read-only de Codex;
+- pantalla Home/Health inicial;
+- logging redacted;
+- tests correspondientes;
+- `ORCHESTRA_BUILD_STATUS.md`.
+
+No instales ni modifiques todavía Codex Router en mi sistema real durante esta primera entrega. Prepara el adapter y los mocks/fixtures necesarios para la Fase 2.
+
+Cuando termines, dame:
+1. resumen de lo construido;
+2. estructura final relevante;
+3. checks ejecutados y resultados;
+4. decisiones/ADRs;
+5. riesgos;
+6. qué exactamente falta para pasar a Fase 2.</textarea>
+</section>
+
+<section id="sources">
+  <h2>16 · Base técnica investigada</h2>
+  <p>La arquitectura se apoya en estas capacidades actuales, verificadas el 12‑08‑2026:</p>
+  <ul>
+    <li>Codex local soporta subagentes y custom agents con configuraciones/modelos diferentes; instrucciones de <code>AGENTS.md</code> o skills pueden solicitar delegación.</li>
+    <li>Codex App Server es la interfaz oficial para integrar Codex profundamente en otro producto; el transporte WebSocket está marcado como experimental, por eso no se usa como dependencia crítica del MVP.</li>
+    <li>Plugins pueden incluir skills y conectores/MCP, y están disponibles en Codex dentro de ChatGPT Desktop; una skill standalone es suficiente para el routing inicial.</li>
+    <li>Codex Router traduce/encamina modelos externos y ya gestiona catálogo, providers y custom routed agents; por eso conviene envolverlo en vez de reimplementar el bridge.</li>
+  </ul>
+  <div class="source">
+    OpenAI Codex Subagents: https://developers.openai.com/codex/subagents<br/>
+    OpenAI Codex App Server: https://developers.openai.com/codex/app-server<br/>
+    OpenAI Codex Plugins: https://developers.openai.com/codex/plugins<br/>
+    OpenAI Codex Skills: https://developers.openai.com/codex/skills<br/>
+    Codex Router: https://github.com/duolahypercho/codex-router<br/>
+    Codex Orchestration (referencia de workflow): https://github.com/Cjbuilds/Codex-Orchestration
+  </div>
+</section>
+
+<div class="footer">
+  Codex Orchestra · Master Build Plan v1.0 · Documento pensado para ejecución incremental dentro de Codex Desktop.
+</div>
+</main>
+</div>
+
+<script>
+function copyPrompt(){
+  const el=document.getElementById('masterPrompt');
+  navigator.clipboard.writeText(el.value).then(()=>{
+    document.getElementById('copyStatus').textContent='Copiado.';
+    setTimeout(()=>document.getElementById('copyStatus').textContent='',1800);
+  }).catch(()=>{
+    el.select();
+    document.execCommand('copy');
+    document.getElementById('copyStatus').textContent='Copiado.';
+  });
+}
+document.querySelectorAll('.check input').forEach((box,i)=>{
+  const key='orchestra-plan-check-'+i;
+  box.checked=localStorage.getItem(key)==='1';
+  box.addEventListener('change',()=>localStorage.setItem(key,box.checked?'1':'0'));
+});
+</script>
+</body>
+</html>

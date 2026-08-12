@@ -1,0 +1,30 @@
+{
+  "name": "codex-orchestra",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Windows-first local control plane for Codex, Codex Router and delegated agents.",
+  "type": "module",
+  "workspaces": [
+    "apps/desktop",
+    "packages/contracts"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/desktop run dev",
+    "build": "npm --workspace apps/desktop run build",
+    "typecheck": "npm run typecheck:contracts && npm --workspace apps/desktop run typecheck",
+    "typecheck:contracts": "tsc -p packages/contracts/tsconfig.json --noEmit",
+    "test": "tsx --test packages/contracts/test/contracts.test.ts",
+    "test:rust": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "format:check": "prettier --check --ignore-unknown \"apps/**/*.{ts,tsx,css,json}\" \"packages/**/*.{ts,json}\" \"scripts/**/*.mjs\" \"docs/**/*.md\" \"evals/**/*.json\" \"AGENTS.md\" \"README.md\" \"ORCHESTRA_BUILD_STATUS.md\"",
+    "format": "prettier --write --ignore-unknown \"apps/**/*.{ts,tsx,css,json}\" \"packages/**/*.{ts,json}\" \"scripts/**/*.mjs\" \"docs/**/*.md\" \"evals/**/*.json\" \"AGENTS.md\" \"README.md\" \"ORCHESTRA_BUILD_STATUS.md\"",
+    "tauri:dev": "npm --workspace apps/desktop run tauri:dev",
+    "tauri:build": "npm --workspace apps/desktop run tauri:build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}

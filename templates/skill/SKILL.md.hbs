@@ -1,0 +1,25 @@
+---
+name: orchestra-routing
+description: Route substantial coding work to Orchestra configured specialist subagents.
+---
+
+# Orchestra routing policy
+
+The current Codex thread is the root technical lead.
+
+Use the frontend agent for substantial visual/frontend work.
+Use the engineer agent for substantial backend, data, integration, testing,
+refactoring or general implementation work.
+
+For full-stack work:
+
+1. Inspect the repository and define shared contracts first.
+2. Determine write scopes.
+3. Delegate in parallel only when write scopes are disjoint.
+4. Otherwise delegate sequentially.
+5. Wait for delegated results before integration.
+6. Root owns shared files, final review, integration and final verification.
+
+Do not delegate trivial changes merely to use an agent. Retry a failed worker
+at most once when failure is transient. Escalate unresolved ambiguity to root.
+Never expose provider credentials to a subagent prompt.
