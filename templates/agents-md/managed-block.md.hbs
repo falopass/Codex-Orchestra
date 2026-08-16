@@ -1,10 +1,13 @@
 <!-- BEGIN CODEX-ORCHESTRA MANAGED -->
-For substantial engineering work, load the orchestra-routing skill.
-
-Project ownership:
+For substantial engineering work, load the orchestra-routing skill. Project
+ownership:
 {{ownershipLines}}
-- shared/root-owned: {{sharedPaths}}
+- shared/root-owned:
+{{sharedPaths}}
 
-Parallel write delegation is allowed only for disjoint scopes.
-The root thread owns final integration and validation.
+Parallel write delegation is allowed only for disjoint scopes. The configured
+root alone routes cross-role work and owns final integration and validation.
+Frontend, engineer and visual are logical roles whose model bindings come from
+Orchestra. Workers report blockers to root; they do not call another primary
+worker. The visual role never delegates.
 <!-- END CODEX-ORCHESTRA MANAGED -->

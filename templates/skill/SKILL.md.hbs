@@ -5,19 +5,35 @@ description: Route substantial coding work to Orchestra configured specialist su
 
 # Orchestra routing policy
 
-The current Codex thread is the root technical lead.
+GPT-5.6 Sol is Root / Tech Lead. Sol divides substantial tasks before
+delegation, chooses role/model bindings and write scopes, decides whether work
+can run in parallel, integrates all handoffs and performs final review.
 
-Use the frontend agent for substantial visual/frontend work.
-Use the engineer agent for substantial backend, data, integration, testing,
-refactoring or general implementation work.
+Roles are logical bindings, not permanently fixed models. Initial bindings are
+Root = GPT-5.6 Sol, Engineer = Grok 4.6, Frontend general = Qwen 3.8 Max via
+Alibaba/Qwen Token Plan, and Visual/UI specialist = Kimi K3 via OpenCode Go.
+
+Use Qwen for normal React, TypeScript, forms, state, API wiring, components,
+responsive CSS and ordinary frontend implementation. Keep Qwen tasks bounded to
+the assigned frontend files and dependency edges; avoid full-repository
+inventories and broad checks unless Sol explicitly requests them. Use Grok for backend,
+architecture implementation, debugging, tests, integration and general
+engineering. Use Kimi selectively for visual redesign, screenshot-driven work,
+complex UI composition, UX review, design-system refinement and visual polish.
+Kimi does not delegate.
+
+Cross-role delegation always passes through Sol. Qwen, Grok and Kimi never
+call another primary worker. If a worker needs another specialty, it reports
+the exact missing input to Sol; Sol asks the right specialist and returns the
+relevant handoff. Do not form arbitrary chains such as Qwen → Grok → Kimi.
 
 For full-stack work:
 
 1. Inspect the repository and define shared contracts first.
-2. Determine write scopes.
+2. Give every worker an explicit objective, allowed files and handoff format.
 3. Delegate in parallel only when write scopes are disjoint.
-4. Otherwise delegate sequentially.
-5. Wait for delegated results before integration.
+4. Never let two workers write the same or shared file at once.
+5. Otherwise delegate sequentially through Sol.
 6. Root owns shared files, final review, integration and final verification.
 
 Do not delegate trivial changes merely to use an agent. Retry a failed worker

@@ -156,7 +156,7 @@
   <h1 class="hero-title">Construir un control plane profesional para Codex, Grok y Kimi.</h1>
   <p class="hero-lead">
     Este documento define un producto local, privado y liviano para usar <b>GPT‑5.6 Sol como Tech Lead/orquestador</b>,
-    <b>Grok 4.6 como engineer/ejecutor</b> y <b>Kimi K3 como especialista frontend</b>, manteniendo Codex Desktop como
+    <b>Grok 4.6 como engineer/ejecutor</b>, <b>Qwen 3.8 Max como frontend general</b> y <b>Kimi K3 como especialista visual/UI</b>, manteniendo Codex Desktop como
     superficie principal de trabajo.
   </p>
   <div class="pillbar">
@@ -239,8 +239,8 @@
              │                                │
              ▼                                ▼
 ┌─────────────────────────┐       ┌─────────────────────────────┐
-│  FRONTEND · KIMI K3     │       │ ENGINEER · GROK 4.6        │
-│ UI · UX · React · CSS   │       │ backend · lógica · tests   │
+│  FRONTEND · LÓGICO      │       │ ENGINEER · GROK 4.6        │
+│ Qwen general / Kimi UI  │       │ backend · lógica · tests   │
 └────────────┬────────────┘       └──────────────┬──────────────┘
              │                                   │
              └──────────────┬────────────────────┘
@@ -267,7 +267,7 @@
 </div>
 
   <h3>Principio de responsabilidad</h3>
-  <p><b>Sol decide.</b> <b>Kimi diseña/implementa frontend.</b> <b>Grok implementa ingeniería general.</b>
+  <p><b>Sol decide.</b> <b>Qwen implementa frontend general.</b> <b>Kimi refina UI/UX visual.</b> <b>Grok implementa ingeniería general.</b>
   <b>Orchestra configura y observa.</b> <b>Codex Router transporta.</b></p>
 
   <div class="callout">
@@ -323,14 +323,24 @@ responsabilidades:
   - validar resultado final
 
 FRONTEND
-model: Kimi K3
+role: logical model binding
+default: Qwen 3.8 Max via Alibaba Token Plan
+candidate: Kimi K3 via OpenCode Go
 responsabilidades:
+  - React / TypeScript / forms / state
   - UI / UX
   - React / Next / RN
   - layout / CSS / responsive
   - accesibilidad
-  - fidelidad visual
-  - componentes y animaciones
+  - componentes y tests frontend
+
+VISUAL SPECIALIST
+model: Kimi K3 via OpenCode Go
+responsabilidades:
+  - rediseño visual
+  - screenshots y fidelidad visual
+  - UX review
+  - design system y microinteracciones
 
 ENGINEER
 model: Grok 4.6
@@ -348,6 +358,7 @@ responsabilidades:
       <h3>Reglas de decisión</h3>
       <ul>
         <li><b>Trivial:</b> Sol puede resolver directamente.</li>
+        <li><b>Frontend general:</b> Qwen.</li>
         <li><b>Frontend visual:</b> Kimi.</li>
         <li><b>Backend/lógica:</b> Grok.</li>
         <li><b>Full-stack:</b> Sol define contrato y delega por ownership.</li>
@@ -765,7 +776,7 @@ The root thread owns final integration and validation.
         <li>El usuario puede completar setup sin editar archivos manualmente.</li>
         <li>GPT‑5.6 Sol nativo sigue disponible y operativo en Codex.</li>
         <li>Kimi K3 y Grok 4.6 están configurados, autenticados y verificados.</li>
-        <li>Hay un agente <b>frontend</b> pinneado a Kimi y un <b>engineer</b> pinneado a Grok.</li>
+        <li>Hay un rol lógico <b>frontend</b> seleccionable entre Qwen (default) y Kimi visual, y un <b>engineer</b> pinneado a Grok.</li>
         <li>Sol puede delegar a ambos y recoger resultados.</li>
         <li>Orchestra puede aplicar y revertir sus cambios sin destruir configuración previa.</li>
         <li>Ningún secreto aparece en logs, DB, HTML, prompts ni archivos de proyecto.</li>
@@ -811,7 +822,8 @@ REGLAS DE EJECUCIÓN
 11. La arquitectura objetivo es:
     - Codex Desktop = execution surface.
     - GPT-5.6 Sol = root/orchestrator/reviewer.
-    - Kimi K3 = frontend specialist.
+    - Qwen 3.8 Max = frontend general por defecto.
+    - Kimi K3 = especialista visual/UI seleccionable.
     - Grok 4.6 = engineer/executor.
     - Codex Router = provider/routing engine.
     - Codex Orchestra = control plane.

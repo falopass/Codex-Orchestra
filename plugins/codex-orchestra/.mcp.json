@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "codex-orchestra": {
+      "command": "python",
+      "args": [
+        "scripts/mcp_server.py"
+      ],
+      "cwd": ".",
+      "env": {
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}

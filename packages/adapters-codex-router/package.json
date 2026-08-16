@@ -1,0 +1,12 @@
+{
+  "name": "@codex-orchestra/adapter-codex-router",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@codex-orchestra/contracts": "0.1.0"
+  }
+}

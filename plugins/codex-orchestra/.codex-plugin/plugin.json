@@ -1,0 +1,50 @@
+{
+  "name": "codex-orchestra",
+  "version": "0.1.0",
+  "description": "Local control plane for Codex Router, logical team roles and managed project files.",
+  "author": {
+    "name": "falopass",
+    "url": "https://github.com/falopass"
+  },
+  "homepage": "https://github.com/falopass/Codex-Orchestra",
+  "repository": "https://github.com/falopass/Codex-Orchestra",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "openai-codex",
+    "mcp",
+    "router",
+    "orchestration",
+    "developer-tools"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Codex Orchestra",
+    "shortDescription": "Configure Router, team roles and managed Codex files from a local plugin.",
+    "longDescription": "Codex Orchestra is a Windows-first local control plane. The plugin exposes redacted health, Router lifecycle, catalog status, logical team bindings, managed AGENTS.md writes, diagnostics and worktree planning through skills and a local stdio MCP. The desktop app remains the advanced UI. Thread create/send/steer is delegated to the existing codex-control plugin. Secrets never leave Router helpers or OS stores.",
+    "developerName": "falopass",
+    "category": "Productivity",
+    "capabilities": [
+      "Overview and health",
+      "Router detect/doctor/start/logs",
+      "Models and providers without secrets",
+      "Team builder and managed config",
+      "Diagnostics and repair",
+      "Usage summary",
+      "Worktree planning"
+    ],
+    "websiteURL": "https://github.com/falopass/Codex-Orchestra",
+    "defaultPrompt": [
+      "Show Orchestra health and Router status.",
+      "Preview Orchestra-managed files for this project.",
+      "List visible models and current team bindings."
+    ],
+    "brandColor": "#1F4B3A",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.png",
+    "screenshots": [
+      "./assets/screenshot-overview.png"
+    ]
+  }
+}

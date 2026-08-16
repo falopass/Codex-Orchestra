@@ -1,9 +1,13 @@
 {
   "status": "healthy",
-  "version": "0.4.0-beta.2",
+  "version": "0.4.0-beta.3",
   "checks": [
     { "id": "source", "status": "PASS", "detail": "managed checkout" },
     { "id": "service", "status": "PASS", "detail": "loopback service" },
-    { "id": "catalog", "status": "PASS", "detail": "merged catalog present" }
+    {
+      "id": "catalog",
+      "status": "PASS",
+      "detail": "merged catalog present; opencode-go/kimi-k3 available"
+    }
   ]
 }

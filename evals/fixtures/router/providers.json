@@ -1,7 +1,21 @@
 [
   {
+    "id": "opencode-go",
+    "name": "OpenCode Go / Kimi K3",
+    "enabled": true,
+    "credential": "configured",
+    "billingType": "subscription",
+    "baseUrl": "https://opencode.ai/zen/go/v1"
+  },
+  {
     "id": "kimi-api",
     "name": "Kimi Platform",
+    "enabled": true,
+    "credential": "configured"
+  },
+  {
+    "id": "grok-oauth",
+    "name": "Grok / SuperGrok OAuth",
     "enabled": true,
     "credential": "configured"
   },

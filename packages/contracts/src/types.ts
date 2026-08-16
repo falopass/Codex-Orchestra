@@ -3,7 +3,9 @@ export type HealthStatus =
 export type CredentialStatus =
   "configured" | "missing" | "invalid" | "expired" | "unknown";
 export type AgentRole = "root" | "frontend" | "engineer";
+export type FrontendStrategyMode = "auto" | "pinned";
 export type UsageSource = "provider" | "router" | "estimate";
+export type BillingType = "subscription" | "payg" | "native" | "unknown";
 export type RouterOperation =
   | "doctor"
   | "status"
@@ -20,6 +22,9 @@ export interface CodexInstall {
   executable?: string;
   version?: string;
   home?: string;
+  configPath?: string;
+  configDetected: boolean;
+  configHealth: HealthStatus;
   login: CredentialStatus;
   nativeModelsAvailable: boolean;
   source: "path" | "windows-app" | "fixture" | "unknown";
@@ -33,6 +38,68 @@ export interface RouterInstall {
   health: HealthStatus;
   ports: number[];
   service: "running" | "stopped" | "unknown";
+  /** Observed loopback process/runtime, never a user or home path. */
+  runtime?: RouterRuntimeStatus;
+}
+
+export type RouterConnectionIssue =
+  | "offline"
+  | "connection-refused"
+  | "unhealthy"
+  | "missing-runtime"
+  | "active-execution";
+
+export interface RouterRuntimeStatus {
+  detected: boolean;
+  healthy: boolean;
+  service: "running" | "stopped" | "unknown";
+  ports: number[];
+  identityOk: boolean;
+  issue?: RouterConnectionIssue;
+  message: string;
+  canRestart: boolean;
+  requiresConfirmation: boolean;
+  activeExecution: boolean;
+}
+
+export interface RouterHealthResult {
+  ok: boolean;
+  healthy: boolean;
+  service: "running" | "stopped" | "unknown";
+  ports: number[];
+  identityOk: boolean;
+  issue?: RouterConnectionIssue;
+  message: string;
+  canRestart: boolean;
+  requiresConfirmation: boolean;
+  activeExecution: boolean;
+  redacted: true;
+}
+
+export type RouterRestartPhase =
+  "checking" | "starting" | "waiting" | "healthy" | "restored" | "failed";
+
+export interface RouterRestartResult {
+  ok: boolean;
+  restarted: boolean;
+  phase: RouterRestartPhase;
+  message: string;
+  health: RouterHealthResult;
+  logsAvailable: boolean;
+  redacted: true;
+}
+
+export interface RouterLogLine {
+  source: "router.err" | "router.out";
+  text: string;
+}
+
+export interface RouterLogsResult {
+  ok: boolean;
+  available: boolean;
+  lines: RouterLogLine[];
+  message: string;
+  redacted: true;
 }
 
 export interface Provider {
@@ -41,7 +108,9 @@ export interface Provider {
   family: "kimi" | "xai" | "openai" | "other";
   credential: CredentialStatus;
   enabled: boolean;
+  billingType: BillingType;
   billingNote: string;
+  baseUrl?: string;
   lastChecked?: string;
 }
 
@@ -56,6 +125,28 @@ export interface Model {
   reasoningEfforts: string[];
   source: "registry" | "curated" | "native" | "fixture";
   contextWindow?: number;
+  autoCompactionThreshold?: number;
+  upstreamModel?: string;
+}
+
+export interface FrontendModelTarget {
+  provider: string;
+  upstreamModel: string;
+}
+
+export interface FrontendModelStrategy {
+  mode: FrontendStrategyMode;
+  pinnedModel?: FrontendModelTarget;
+}
+
+export interface FrontendModelCandidate {
+  key: "qwen" | "kimi";
+  label: string;
+  provider: string;
+  providerLabel: string;
+  upstreamModel: string;
+  purpose: string;
+  reasoningEffort: "high" | "max";
 }
 
 export interface ModelBinding {
@@ -63,7 +154,9 @@ export interface ModelBinding {
   label: string;
   targetFamily: string;
   preferredProvider: string;
+  preferredUpstreamModel: string;
   candidateModelIds: string[];
+  candidateTargets?: FrontendModelTarget[];
   desiredLabel: string;
 }
 
@@ -74,6 +167,7 @@ export interface AgentDefinition {
   description: string;
   providerId: string;
   modelId?: string;
+  modelTarget?: FrontendModelTarget;
   reasoningEffort: string;
   permissions: string[];
   routingHints: string[];
@@ -156,7 +250,36 @@ export interface PricingRule {
   outputPerMillion: number;
   effectiveFrom: string;
   version: string;
+  billingType?: BillingType;
+  sourceLabel?: string;
   sourceUrl?: string;
+}
+
+export interface PricingImportPreview {
+  token: string;
+  count: number;
+  providers: string[];
+  versions: string[];
+  effectiveFrom: string;
+  effectiveTo: string;
+  subscriptionRules: number;
+  paygRules: number;
+  writesCredentialValues: false;
+}
+
+export interface LogEvent {
+  id: string;
+  timestamp: string;
+  level: "info" | "warn" | "error";
+  operation: string;
+  message: string;
+  redacted: true;
+}
+
+export interface FeatureFlags {
+  appServer: boolean;
+  mcp: boolean;
+  experimentalWorktrees: boolean;
 }
 
 export interface CostBreakdown {
@@ -231,19 +354,80 @@ export interface ScopePlan {
   worktreeRecommended: boolean;
 }
 
+export interface WorktreeStatus {
+  ok: boolean;
+  role: "frontend" | "engineer";
+  slug: string;
+  projectRoot?: string;
+  target: string;
+  state: "not-created" | "active" | "missing";
+  recorded: boolean;
+  baseRef?: string;
+  worktreeHead?: string;
+  projectHead?: string;
+  baseDrifted?: boolean;
+  dirty: boolean;
+  commitsAhead: number;
+  changedFiles: string[];
+  canRemoveSafely: boolean;
+  requiresManualMerge: boolean;
+  merge?: string;
+  redacted: true;
+}
+
+export interface WorktreePreview {
+  ok: boolean;
+  role: "frontend" | "engineer";
+  slug: string;
+  projectRoot: string;
+  target: string;
+  command: string;
+  requiresConfirmation: true;
+  experimental: true;
+  merge: string;
+}
+
 export interface PreviewFile {
   path: string;
   action: "create" | "update" | "unchanged";
   diff: string;
+  /** Optimistic concurrency token for the reviewed managed file. */
+  currentHash?: string;
+  /** Generated managed content only; foreign project content is never included. */
+  contentPreview?: string;
   safe: boolean;
 }
 
 export interface LiveCheckPreview {
   provider: string;
   model: string;
-  test: "basic" | "streaming" | "tool-use" | "agent-behavior";
+  /**
+   * `compatibility` runs Router's full billed suite (basic, streaming, tools
+   * and compaction). `agent-behavior` runs the pinned Router's real two-turn
+   * `codex exec` capability probe.
+   */
+  test: "compatibility" | "agent-behavior";
+  coveredChecks: string[];
+  billingType: "subscription" | "payg";
+  billingSource: string;
   estimatedCostNote: string;
   requiresConfirmation: true;
+}
+
+export interface DelegationEvidence {
+  id: string;
+  runId: string;
+  occurredAt: string;
+  rootModel: string;
+  requestedRole: "frontend" | "engineer" | "visual" | "unspecified";
+  requestedWorkerModel?: string;
+  action:
+    "spawn-agent" | "send-message" | "follow-up" | "wait" | "interrupt-agent";
+  status: "completed" | "failed" | "interrupted" | "declined" | "unknown";
+  childCreated: boolean;
+  rootMediated: true;
+  source: "codex-app-server";
+  redacted: true;
 }
 
 export interface OrchestraSnapshot {
@@ -252,12 +436,18 @@ export interface OrchestraSnapshot {
   router: RouterInstall;
   providers: Provider[];
   models: Model[];
+  frontendStrategy?: FrontendModelStrategy;
   agents: AgentDefinition[];
   projects: ProjectProfile[];
   health?: HealthReport;
+  healthHistory?: HealthReport[];
   usage: UsageEvent[];
   budget: Budget;
   backups: Backup[];
   update: UpdatePlan;
   diagnostics: DiagnosticItem[];
+  pricingRules?: PricingRule[];
+  delegationEvidence?: DelegationEvidence[];
+  logs?: LogEvent[];
+  featureFlags?: FeatureFlags;
 }

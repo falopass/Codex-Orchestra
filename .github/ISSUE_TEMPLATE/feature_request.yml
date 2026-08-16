@@ -1,0 +1,29 @@
+name: Feature request
+description: Propose a bounded Orchestra change
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Keep Router external and desktop as the advanced UI unless there is a new Codex plugin UI host.
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Plugin / MCP
+        - Desktop
+        - Core / adapters
+        - Docs
+    validations:
+      required: true

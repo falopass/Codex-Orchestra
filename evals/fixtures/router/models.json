@@ -1,5 +1,16 @@
 [
   {
+    "id": "opencode-go/kimi-k3",
+    "label": "Kimi K3 via OpenCode Go",
+    "providerId": "opencode-go",
+    "source": "registry",
+    "supportsTools": true,
+    "supportsSubagents": true,
+    "upstreamModel": "kimi-k3",
+    "contextWindow": 256000,
+    "autoCompactionThreshold": 230000
+  },
+  {
     "id": "kimi-api/kimi-k3",
     "label": "Kimi K3",
     "providerId": "kimi-api",
@@ -8,10 +19,18 @@
     "supportsSubagents": true
   },
   {
-    "id": "grok-api/grok-4.5",
-    "label": "Grok 4.5",
+    "id": "grok-oauth/grok-4.6",
+    "label": "Grok 4.6 OAuth",
+    "providerId": "grok-oauth",
+    "source": "curated",
+    "supportsTools": true,
+    "supportsSubagents": true
+  },
+  {
+    "id": "grok-api/grok-4.6",
+    "label": "Grok 4.6",
     "providerId": "grok-api",
-    "source": "registry",
+    "source": "curated",
     "supportsTools": true,
     "supportsSubagents": true
   }

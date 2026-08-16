@@ -6,25 +6,41 @@
   "type": "module",
   "workspaces": [
     "apps/desktop",
-    "packages/contracts"
+    "packages/contracts",
+    "packages/orchestra-core",
+    "packages/adapters-codex-router",
+    "packages/adapters-codex-app-server"
   ],
   "scripts": {
     "dev": "npm --workspace apps/desktop run dev",
     "build": "npm --workspace apps/desktop run build",
-    "typecheck": "npm run typecheck:contracts && npm --workspace apps/desktop run typecheck",
+    "typecheck": "npm run typecheck:contracts && npm run typecheck:core && npm --workspace apps/desktop run typecheck",
     "typecheck:contracts": "tsc -p packages/contracts/tsconfig.json --noEmit",
-    "test": "tsx --test packages/contracts/test/contracts.test.ts",
+    "test": "tsx --test packages/contracts/test/contracts.test.ts packages/contracts/test/integration.test.ts packages/orchestra-core/test/core.test.ts && npm run test:plugin",
     "test:rust": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml",
     "check:secrets": "node scripts/check-secrets.mjs",
     "format:check": "prettier --check --ignore-unknown \"apps/**/*.{ts,tsx,css,json}\" \"packages/**/*.{ts,json}\" \"scripts/**/*.mjs\" \"docs/**/*.md\" \"evals/**/*.json\" \"AGENTS.md\" \"README.md\" \"ORCHESTRA_BUILD_STATUS.md\"",
     "format": "prettier --write --ignore-unknown \"apps/**/*.{ts,tsx,css,json}\" \"packages/**/*.{ts,json}\" \"scripts/**/*.mjs\" \"docs/**/*.md\" \"evals/**/*.json\" \"AGENTS.md\" \"README.md\" \"ORCHESTRA_BUILD_STATUS.md\"",
     "tauri:dev": "npm --workspace apps/desktop run tauri:dev",
-    "tauri:build": "npm --workspace apps/desktop run tauri:build"
+    "tauri:build": "npm --workspace apps/desktop run tauri:build",
+    "typecheck:core": "tsc -p packages/orchestra-core/tsconfig.json --noEmit && tsc -p packages/adapters-codex-router/tsconfig.json --noEmit && tsc -p packages/adapters-codex-app-server/tsconfig.json --noEmit",
+    "test:plugin": "python plugins/codex-orchestra/test/test_plugin_core.py",
+    "validate:plugin": "python plugins/codex-orchestra/test/test_plugin_core.py"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
     "prettier": "^3.6.2",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/falopass/Codex-Orchestra.git"
+  },
+  "homepage": "https://github.com/falopass/Codex-Orchestra",
+  "bugs": "https://github.com/falopass/Codex-Orchestra/issues",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.19.0"
   }
 }

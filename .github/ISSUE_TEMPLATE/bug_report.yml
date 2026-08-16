@@ -1,0 +1,50 @@
+name: Bug report
+description: Something in Orchestra does not match the documented behavior
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Do not paste API keys, config.toml contents, support bundles or personal paths.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Plugin / MCP
+        - Desktop
+        - Core / adapters
+        - Docs
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Commands or redacted steps only.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "0.1.0"
+  - type: checkboxes
+    id: secrets
+    attributes:
+      label: Secrets
+      options:
+        - label: This report contains no credentials, tokens or private files
+          required: true

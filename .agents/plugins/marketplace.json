@@ -1,0 +1,20 @@
+{
+  "name": "codex-orchestra",
+  "interface": {
+    "displayName": "Codex Orchestra"
+  },
+  "plugins": [
+    {
+      "name": "codex-orchestra",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-orchestra"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

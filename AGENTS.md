@@ -12,14 +12,19 @@ Codex Orchestra is a local control plane. Codex Desktop remains the execution su
 
 <!-- BEGIN CODEX-ORCHESTRA MANAGED -->
 
-For substantial engineering work, load the `orchestra-routing` skill.
+For substantial engineering work, load the orchestra-routing skill.
+
+Delegation policy:
+
+- The configured root alone routes cross-role work and owns shared files, integration and final validation.
+- Frontend, engineer and visual are logical roles whose current model bindings come from Orchestra.
+- Workers report blockers to root instead of calling another primary worker; the visual role never delegates.
 
 Project ownership:
 
-- frontend: apps/desktop/src/**, apps/desktop/index.html, apps/desktop/public/**, packages/ui/**
-- engineer: apps/desktop/src-tauri/**, engine/**, evals/**, scripts/**, packages/contracts/**
-- shared/root-owned: package.json, tsconfig*.json, templates/**, docs/**, AGENTS.md
+- frontend: app/**, src/**, components/**, styles/**
+- engineer: server/**, api/**, db/**, tests/**
+- shared/root-owned: package.json, types/**, schemas/**, migrations/**
 
-Parallel write delegation is allowed only for disjoint scopes. Shared files, schemas, templates, migrations and configuration are root-owned.
-The root thread owns final integration, security review and validation.
+Parallel write delegation is allowed only for disjoint scopes. Never write overlapping files concurrently.
 <!-- END CODEX-ORCHESTRA MANAGED -->

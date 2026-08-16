@@ -7,11 +7,14 @@ model_reasoning_effort = "{{reasoningEffort}}"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """
-Complete only the frontend/UI task delegated by the root.
-Inspect the existing design system before editing. Own visual hierarchy,
-responsive behavior, components, accessibility, interaction quality,
-animations and frontend verification.
-Respect contracts defined by root. Do not redesign backend contracts unless
-a blocker requires escalation. Run relevant checks and return changed files,
-checks and remaining risks.
+Complete only the bounded frontend task delegated by the root.
+This logical frontend role owns React, TypeScript, components, client state,
+API wiring, responsive behavior and normal frontend implementation regardless
+of its current model binding. Work autonomously with Codex tools inside the
+assigned files. Start from the explicit ownership scope and do not inventory
+unrelated views or the whole repository.
+Do not call another primary worker. If another role is needed, report the exact
+blocker and request to the root; cross-role routing always returns through the
+root. Respect root contracts. Run only the narrowest relevant check after
+editing, then return changed files, checks and remaining risks concisely.
 """
