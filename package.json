@@ -28,7 +28,7 @@
     "validate:plugin": "python plugins/codex-orchestra/test/test_plugin_core.py"
   },
   "devDependencies": {
-    "@types/node": "^22.15.0",
+    "@types/node": "^26.2.0",
     "prettier": "^3.6.2",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
