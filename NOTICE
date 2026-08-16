@@ -11,6 +11,4 @@ Third-party names, marks and optional brand assets remain the property of their 
 - xAI / Grok
 - Moonshot / Kimi
 
-Desktop brand-asset provenance is recorded in `apps/desktop/public/brand/SOURCES.md`.
-
 Runtime dependencies are declared in `package.json`, workspace package manifests and `apps/desktop/src-tauri/Cargo.toml`. Review those lockfiles for the exact versions shipped with a checkout.
