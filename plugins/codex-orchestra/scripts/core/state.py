@@ -11,12 +11,34 @@ from .paths import state_db_path
 from .redact import redact
 
 
-def _connect(path: Path | None = None) -> sqlite3.Connection | None:
+SCHEMA = [
+    "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT)",
+    "CREATE TABLE IF NOT EXISTS logs (id TEXT PRIMARY KEY, timestamp TEXT, level TEXT, operation TEXT, payload TEXT)",
+    "CREATE TABLE IF NOT EXISTS health_runs (id TEXT PRIMARY KEY, started_at TEXT, completed_at TEXT, status TEXT, payload TEXT)",
+    "CREATE TABLE IF NOT EXISTS usage_events (id TEXT PRIMARY KEY, timestamp TEXT, input_tokens INTEGER, output_tokens INTEGER, payload TEXT)",
+    "CREATE TABLE IF NOT EXISTS backups (id TEXT PRIMARY KEY, created_at TEXT, payload TEXT)",
+    "CREATE TABLE IF NOT EXISTS pricing_rules (id TEXT PRIMARY KEY, effective_from TEXT, payload TEXT)",
+    "CREATE TABLE IF NOT EXISTS worktrees (id TEXT PRIMARY KEY, created_at TEXT, payload TEXT)",
+    "CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, updated_at TEXT, payload TEXT)",
+    "CREATE TABLE IF NOT EXISTS delegation_evidence (id TEXT PRIMARY KEY, occurred_at TEXT, payload TEXT)",
+]
+
+
+def _ensure_schema(connection: sqlite3.Connection) -> None:
+    for statement in SCHEMA:
+        connection.execute(statement)
+    connection.commit()
+
+
+def _connect(path: Path | None = None, *, create: bool = False) -> sqlite3.Connection | None:
     db = path or state_db_path()
-    if not db.is_file():
+    if not db.is_file() and not create:
         return None
+    db.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(str(db))
     connection.row_factory = sqlite3.Row
+    if create:
+        _ensure_schema(connection)
     return connection
 
 
@@ -38,9 +60,8 @@ def load_setting(key: str, default: Any = None) -> Any:
 def save_setting(key: str, value: Any) -> None:
     from datetime import datetime, timezone
 
-    connection = _connect()
-    if connection is None:
-        raise RuntimeError("Orchestra state database was not found.")
+    connection = _connect(create=True)
+    assert connection is not None
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     connection.execute(
         "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, ?)",
@@ -120,9 +141,8 @@ def feature_flags() -> dict[str, bool]:
 
 
 def persist_log(level: str, operation: str, message: str) -> None:
-    connection = _connect()
-    if connection is None:
-        return
+    connection = _connect(create=True)
+    assert connection is not None
     from datetime import datetime, timezone
 
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

@@ -12,3 +12,5 @@ Roles are logical. Do not hard-code one personal model stack as a requirement.
 3. Update one role at a time with `confirm=true`.
 4. Saving local bindings does not write project files. Use `$orchestra-setup` to preview/apply generated TOML.
 5. Never overwrite agents that are not `orchestra_*`.
+
+Documented team defaults (Qwen/Grok routes) are examples, not a requirement. Bindings validate against the live Router catalog; a binding pointing at a model that is not actually available is reported, not silently accepted.

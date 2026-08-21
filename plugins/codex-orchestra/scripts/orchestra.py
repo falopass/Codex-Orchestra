@@ -36,6 +36,11 @@ def main() -> int:
     router_p = sub.add_parser("router")
     router_p.add_argument("action", nargs="?", default="status")
     router_p.add_argument("--confirm", action="store_true")
+    router_p.add_argument("--provider")
+    router_p.add_argument("--flag")
+    router_p.add_argument("--value")
+    router_p.add_argument("--slug")
+    router_p.add_argument("--args", help="JSON object merged into the router tool arguments")
 
     setup_p = sub.add_parser("setup")
     setup_p.add_argument("--project")
@@ -66,7 +71,18 @@ def main() -> int:
 
     args = parser.parse_args()
     if args.command == "router":
-        return dump(dispatch("orchestra_router", {"action": args.action, "confirm": args.confirm}))
+        router_args = {"action": args.action, "confirm": args.confirm}
+        if args.provider:
+            router_args["provider"] = args.provider
+        if args.flag is not None:
+            router_args["flag"] = args.flag
+        if args.value is not None:
+            router_args["value"] = args.value
+        if args.slug is not None:
+            router_args["slug"] = args.slug
+        if args.args:
+            router_args.update(json.loads(args.args))
+        return dump(dispatch("orchestra_router", router_args))
     if args.command == "setup":
         return dump(dispatch("orchestra_setup", {"project_path": args.project, "confirm": args.confirm}))
     if args.command == "apply":

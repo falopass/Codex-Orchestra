@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "providers": [
+    {
+      "id": "my-reseller",
+      "displayName": "My Reseller",
+      "kind": "openai-compatible",
+      "ownedBy": "my-reseller",
+      "baseUrl": "https://reseller.example/v1",
+      "credential": {
+        "environment": ["MY_RESELLER_API_KEY"],
+        "file": "my-reseller-api-key.secret"
+      }
+    }
+  ]
+}

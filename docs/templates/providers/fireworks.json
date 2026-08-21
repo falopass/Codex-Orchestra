@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "providers": [
+    {
+      "id": "fireworks",
+      "displayName": "Fireworks AI",
+      "kind": "openai-compatible",
+      "ownedBy": "fireworks",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "credential": {
+        "environment": ["FIREWORKS_API_KEY"],
+        "file": "fireworks-api-key.secret"
+      }
+    }
+  ]
+}

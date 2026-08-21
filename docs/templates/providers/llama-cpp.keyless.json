@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "providers": [
+    {
+      "id": "llama-cpp",
+      "displayName": "llama.cpp server",
+      "kind": "openai-compatible",
+      "ownedBy": "local",
+      "baseUrl": "http://127.0.0.1:8080/v1",
+      "keyless": true
+    }
+  ]
+}

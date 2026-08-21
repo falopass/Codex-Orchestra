@@ -1,6 +1,6 @@
 {
   "name": "codex-orchestra",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Local control plane for Codex Router, logical team roles and managed project files.",
   "author": {
     "name": "falopass",

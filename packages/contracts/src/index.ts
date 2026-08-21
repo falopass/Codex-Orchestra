@@ -47,21 +47,29 @@ export const VISIBLE_ROUTED_MODEL_IDS = [
   "opencode-go-messages/qwen3.8-max",
 ] as const;
 
+/** Documented examples. Not an exclusive Codex picker allowlist. */
 export const VISIBLE_CODEX_MODEL_IDS = [
   ...VISIBLE_NATIVE_MODEL_IDS,
   ...VISIBLE_ROUTED_MODEL_IDS,
 ] as const;
 
-export function isVisibleCodexModelId(modelId: string) {
+export function isExampleCodexModelId(modelId: string) {
   const id = modelId.trim();
   return (VISIBLE_CODEX_MODEL_IDS as readonly string[]).includes(id);
 }
 
-export function hiddenCodexModelIds(catalogIds: string[]) {
-  const unique = [
-    ...new Set(catalogIds.map((id) => id.trim()).filter(Boolean)),
-  ];
-  return unique.filter((id) => !isVisibleCodexModelId(id)).sort();
+export function isVisibleCodexModelId(modelId: string) {
+  // Router hide-list is the source of truth. Orchestra does not hide a
+  // catalog, curated or user model just because it is outside the examples.
+  return Boolean(modelId.trim());
+}
+
+export function hiddenCodexModelIds(_catalogIds: string[]) {
+  return [];
+}
+
+export function isSafeProviderId(provider: string) {
+  return /^[a-z][a-z0-9-]{1,31}$/.test(provider) && provider !== "openai" && provider !== "codex";
 }
 
 export const FRONTEND_MODEL_CANDIDATES: FrontendModelCandidate[] = [

@@ -9,7 +9,7 @@ The public surface is **plugin-first**: skills plus a local stdio MCP. The Tauri
 
 ## Status
 
-Public `v0.1.0` is an early, working alpha. Local plugin, core contracts and desktop flows exist. Live provider checks, signed desktop installers and rendered UI QA are still user-authorized or unfinished. Do not treat this as production-stable.
+Public plugin `v0.2.0` is an early, working alpha. Local plugin, core contracts and desktop flows exist. Live provider checks, signed desktop installers and rendered UI QA are still user-authorized or unfinished. Do not treat this as production-stable.
 
 ## What it solves
 
@@ -143,6 +143,7 @@ Writes and process changes need `confirm=true`:
 ```text
 orchestra_router action=doctor
 orchestra_router action=start confirm=true
+orchestra_router action=connect-provider provider=openrouter confirm=true
 orchestra_team ... confirm=true
 orchestra_apply_managed project_path=<abs-path> expectedHash=<hash> confirm=true
 orchestra_repair confirm=true
@@ -170,6 +171,10 @@ npm test
 npm run check:secrets
 npm run build
 ```
+
+Validation is risk-based, not a per-turn checklist. Run the focused tests for
+the surface you changed; run the full release checklist once for merge or
+publication. See [CONTRIBUTING.md](CONTRIBUTING.md#validation-policy).
 
 Desktop:
 
@@ -199,18 +204,27 @@ Or, after cloning this repo on a machine with that Codex skill installed, use th
 | `npm run check:secrets` | High-signal secret scan of the workspace           |
 | `npm run format:check`  | Prettier check                                     |
 
+These are the development and release commands, not a requirement for every
+message. Use the table as a lookup when a surface changes.
+
 Live Router, paid model checks and App Server turns are opt-in. The default suite never touches a real `%USERPROFILE%\.codex` or spends provider quota.
 
 ## Versioning
 
-Public SemVer is `0.1.0` across the repo, plugin manifest and desktop package. Local Codex cachebusters such as `0.1.0+codex.<timestamp>` are for developer reinstalls and are not the published version.
+The plugin manifest is the published version (`0.2.0`) and moves when the
+shipped plugin behavior changes. Repo workspaces and the desktop package stay
+at `0.1.0` until their own releases. Local Codex cachebusters such as
+`0.2.0+codex.<timestamp>` are for developer reinstalls and are not the
+published version.
 
 ## Docs
 
+- [docs/USER-GUIDE.md](docs/USER-GUIDE.md) — connecting providers and models (Path A / Path B)
 - [docs/PLUGIN.md](docs/PLUGIN.md) — install, marketplace, tools, confirms
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — product boundary and layers
 - [docs/OPERATIONS.md](docs/OPERATIONS.md) — Router lifecycle and recovery
 - [docs/SECURITY.md](docs/SECURITY.md) — in-product security model
+- [docs/DECISIONS/ADR-010-user-provider-overlay.md](docs/DECISIONS/ADR-010-user-provider-overlay.md)
 - [docs/DECISIONS/ADR-009-plugin-first-surfaces.md](docs/DECISIONS/ADR-009-plugin-first-surfaces.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [CHANGELOG.md](CHANGELOG.md)

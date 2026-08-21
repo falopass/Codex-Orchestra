@@ -30,19 +30,8 @@ from core.state import feature_flags, load_json_rows, load_setting, persist_log,
 
 
 SHARED_PATHS = ["package.json", "types/**", "schemas/**", "migrations/**"]
-VISIBLE_MODELS = {
-    "gpt-5.6-sol",
-    "gpt-5.6-luna",
-    "gpt-5.6-terra",
-    "gpt-5.5",
-    "gpt-5.2",
-    "grok-oauth/grok-4.6",
-    "opencode-go/kimi-k3",
-    "opencode-go/deepseek-v4-pro",
-    "opencode-go/deepseek-v4-flash",
-    "qwen-plan/qwen3.8-max",
-    "opencode-go-messages/qwen3.8-max",
-}
+CRITICAL_CHECKS = {"codex", "router", "providers"}
+ALLOWED_FLAGS = {"experimentalWorktrees"}
 
 
 def _now() -> str:
@@ -132,6 +121,7 @@ def _default_providers() -> list[dict[str, Any]]:
     return [
         {"id": "qwen-plan", "name": "Qwen / Alibaba Token Plan", "credential": "unknown", "enabled": True},
         {"id": "opencode-go", "name": "OpenCode Go", "credential": "unknown", "enabled": True},
+        {"id": "deepseek", "name": "DeepSeek", "credential": "unknown", "enabled": True},
         {"id": "grok-oauth", "name": "Grok OAuth", "credential": "unknown", "enabled": True},
         {"id": "grok-api", "name": "xAI API", "credential": "unknown", "enabled": True},
         {"id": "openai", "name": "Codex native", "credential": "unknown", "enabled": True},
@@ -206,21 +196,23 @@ def doctor() -> dict[str, Any]:
         {
             "id": "desktop",
             "label": "Desktop app",
-            "status": "healthy" if snapshot["desktop"]["available"] else "missing",
-            "detail": "Advanced UI remains the desktop surface.",
+            "status": "healthy" if snapshot["desktop"]["available"] else "info",
+            "detail": "Optional UI surface. Plugin-first commands work without it.",
         },
         {
             "id": "threads",
             "label": "codex-control",
-            "status": "healthy" if snapshot["threads"]["available"] else "missing",
+            "status": "healthy" if snapshot["threads"]["available"] else "info",
             "detail": snapshot["threads"].get("reason") or "Reuse installed thread-control plugin.",
         },
     ]
+    critical = [check for check in checks if check["id"] in CRITICAL_CHECKS]
+    overall = "healthy"
+    if not all(check["status"] == "healthy" for check in critical):
+        overall = "degraded" if any(check["status"] in {"missing", "degraded", "unhealthy"} for check in critical) else "unknown"
     report = {
         "id": f"health-{_now()}",
-        "status": "healthy"
-        if all(check["status"] == "healthy" for check in checks)
-        else ("degraded" if any(check["status"] in {"missing", "degraded", "unhealthy"} for check in checks) else "unknown"),
+        "status": overall,
         "startedAt": _now(),
         "completedAt": _now(),
         "checks": checks,
@@ -233,7 +225,8 @@ def doctor() -> dict[str, Any]:
 
 def models() -> dict[str, Any]:
     catalog = codex_router.read_catalog()
-    visible = [model for model in catalog.get("models", []) if model.get("id") in VISIBLE_MODELS]
+    all_models = catalog.get("models", [])
+    hidden = codex_router.read_hidden_slugs()
     strategy = load_setting("frontendStrategy") or {
         "mode": "pinned",
         "pinnedModel": {"provider": "qwen-plan", "upstreamModel": "qwen3.8-max"},
@@ -242,8 +235,8 @@ def models() -> dict[str, Any]:
         "ok": catalog.get("ok", False),
         "strategy": strategy,
         "providers": _default_providers(),
-        "models": visible or catalog.get("models", []),
-        "hiddenCount": max(0, len(catalog.get("models", [])) - len(visible)),
+        "models": all_models,
+        "hiddenCount": len(hidden),
         "note": "Credential values are never returned.",
         "redacted": True,
     }
@@ -290,7 +283,30 @@ def save_strategy(mode: str, confirm: bool, provider: str | None = None, upstrea
     return {"ok": True, "strategy": strategy, "redacted": True}
 
 
-def router_action(action: str, confirm: bool = False) -> dict[str, Any]:
+def _to_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on", "enabled"}
+    return bool(value)
+
+
+def set_flag(flag: Any, value: Any, confirm: bool) -> dict[str, Any]:
+    if not flag:
+        return {"ok": True, "action": "flags", "flags": feature_flags(), "redacted": True}
+    if flag not in ALLOWED_FLAGS:
+        raise ValueError("Only experimentalWorktrees can be set from the plugin. Pricing, support bundle and live checks stay desktop-only.")
+    policy.require_confirm("router.set-flag", confirm)
+    flags = load_setting("featureFlags") or {}
+    flags[flag] = _to_bool(value)
+    save_setting("featureFlags", flags)
+    return {"ok": True, "action": "set-flag", "flags": feature_flags(), "redacted": True}
+
+
+def router_action(args: dict[str, Any]) -> dict[str, Any]:
+    action = args.get("action") or "status"
+    confirm = bool(args.get("confirm"))
+    provider = args.get("provider")
     if action in {"detect", "status"}:
         return {"ok": True, "action": action, "router": codex_router.detect(), "redacted": True}
     if action == "logs":
@@ -298,7 +314,42 @@ def router_action(action: str, confirm: bool = False) -> dict[str, Any]:
     if action in {"start", "restart"}:
         policy.require_confirm(f"router.{action}", confirm)
         return {"ok": True, "action": action, **codex_router.start(confirm=confirm, force=action == "restart"), "redacted": True}
-    if action in {"doctor", "providers", "models", "refresh-catalog", "update-check", "update", "rollback", "install"}:
+    if action == "connect-provider":
+        policy.require_confirm("router.connect-provider", confirm)
+        return {"ok": True, "action": action, **codex_router.connect_provider(provider or ""), "redacted": True}
+    if action == "disconnect-provider":
+        policy.require_confirm("router.disconnect-provider", confirm)
+        return {"ok": True, "action": action, **codex_router.disconnect_provider(provider or ""), "redacted": True}
+    if action == "list-providers":
+        return {"ok": True, "action": action, **codex_router.list_providers(), "redacted": True}
+    if action == "enable-provider":
+        policy.require_confirm("router.enable-provider", confirm)
+        return {"ok": True, "action": action, **codex_router.enable_provider(provider or ""), "redacted": True}
+    if action == "disable-provider":
+        policy.require_confirm("router.disable-provider", confirm)
+        return {"ok": True, "action": action, **codex_router.disable_provider(provider or ""), "redacted": True}
+    if action == "upsert-user-provider":
+        policy.require_confirm("router.upsert-user-provider", confirm)
+        return {"ok": True, "action": action, **codex_router.upsert_user_provider(args), "redacted": True}
+    if action == "upsert-user-models":
+        policy.require_confirm("router.upsert-user-models", confirm)
+        return {"ok": True, "action": action, **codex_router.upsert_user_models(args.get("models") or []), "redacted": True}
+    if action == "set-model-visible":
+        policy.require_confirm("router.set-model-visible", confirm)
+        slug = args.get("slug") or args.get("model")
+        return {"ok": True, "action": action, **codex_router.set_model_visible(slug or "", bool(args.get("visible", True))), "redacted": True}
+    if action == "curate-models":
+        policy.require_confirm("router.curate-models", confirm)
+        return {"ok": True, "action": action, **codex_router.curate_models(provider or ""), "redacted": True}
+    if action == "refresh-catalog":
+        policy.require_confirm("router.refresh-catalog", confirm)
+        refresh = codex_router.run_operation("refresh-catalog", confirm=True)
+        return {"ok": bool(refresh.get("ok")), "action": action, "refresh": refresh, "redacted": True}
+    if action == "set-flag":
+        return set_flag(args.get("flag"), args.get("value"), confirm)
+    if action == "flags":
+        return {"ok": True, "action": action, "flags": feature_flags(), "redacted": True}
+    if action in {"doctor", "providers", "models", "update-check", "update", "rollback", "install"}:
         return {"ok": True, "action": action, **codex_router.run_operation(action, confirm=confirm), "redacted": True}
     raise ValueError(f"Unsupported router action: {action}")
 
@@ -420,7 +471,9 @@ def worktrees(project_path: str, action: str = "list", role: str = "frontend", s
     if action == "create":
         policy.require_confirm("worktree.create", confirm)
         if not flags["experimentalWorktrees"]:
-            raise PermissionError("Enable experimental worktrees in the desktop app first")
+            raise PermissionError(
+                "Enable experimental worktrees via orchestra_router action=set-flag flag=experimentalWorktrees value=true"
+            )
         if target.exists():
             raise ValueError("Worktree target already exists")
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -455,7 +508,7 @@ def repair(confirm: bool = False) -> dict[str, Any]:
         "health": health,
         "actions": actions,
         "desktop": desktop_deeplink("diagnostics"),
-        "note": "Paid live checks and credential helpers stay in the desktop app or Router CLI.",
+        "note": "Paid live checks stay in the desktop app. Provider keys stay in the local Router helper.",
         "redacted": True,
     }
 
@@ -530,7 +583,7 @@ def dispatch(name: str, arguments: dict[str, Any] | None = None) -> dict[str, An
             return save_strategy(strategy.get("mode", "pinned"), confirm, strategy.get("provider"), strategy.get("upstreamModel"))
         return team()
     if name in {"orchestra_router", "router"}:
-        return router_action(args.get("action") or "status", confirm)
+        return router_action(args)
     if name in {"orchestra_setup", "setup"}:
         return setup(args.get("project_path") or args.get("projectPath"), confirm)
     if name in {"orchestra_apply_managed", "apply"}:

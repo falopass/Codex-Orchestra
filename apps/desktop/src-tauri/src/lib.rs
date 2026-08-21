@@ -2575,31 +2575,29 @@ fn base_snapshot_local() -> Value {
 }
 
 fn visible_codex_model_id(model_id: &str) -> bool {
-    matches!(
-        model_id,
-        "gpt-5.6-sol"
-            | "gpt-5.6-luna"
-            | "gpt-5.6-terra"
-            | "gpt-5.5"
-            | "gpt-5.2"
-            | "grok-oauth/grok-4.6"
-            | "opencode-go/kimi-k3"
-            | "opencode-go/deepseek-v4-pro"
-            | "opencode-go/deepseek-v4-flash"
-            | "qwen-plan/qwen3.8-max"
-            | "opencode-go-messages/qwen3.8-max"
-    )
+    !model_id.trim().is_empty()
 }
 
-fn hidden_codex_model_ids(catalog_ids: &[String]) -> Vec<String> {
-    let mut hidden: Vec<String> = catalog_ids
+#[cfg(test)]
+fn hidden_codex_model_ids(_catalog_ids: &[String]) -> Vec<String> {
+    Vec::new()
+}
+
+fn is_safe_provider_id(provider: &str) -> bool {
+    let bytes = provider.as_bytes();
+    if bytes.len() < 2 || bytes.len() > 32 {
+        return false;
+    }
+    if !bytes[0].is_ascii_lowercase() {
+        return false;
+    }
+    if !bytes[1..]
         .iter()
-        .filter(|id| !id.is_empty() && !visible_codex_model_id(id))
-        .cloned()
-        .collect();
-    hidden.sort();
-    hidden.dedup();
-    hidden
+        .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-')
+    {
+        return false;
+    }
+    !matches!(provider, "openai" | "codex")
 }
 
 fn assemble_base_snapshot(codex: Value, router: Value, update: Value) -> Value {
@@ -3211,13 +3209,7 @@ fn enrich_router_facts(snapshot: &mut Value) {
                 let Some(provider_id) = catalog_provider_id(&entry) else {
                     continue;
                 };
-                if existing_ids.contains(&model_id)
-                    || !visible_codex_model_id(&model_id)
-                    || !matches!(
-                        provider_id,
-                        "qwen-plan" | "opencode-go" | "grok-oauth" | "grok-api"
-                    )
-                {
+                if existing_ids.contains(&model_id) || !visible_codex_model_id(&model_id) {
                     continue;
                 }
                 let upstream_model = entry["upstreamModel"]
@@ -3866,12 +3858,10 @@ fn router_command(operation: &str, confirm: bool) -> Result<Value, String> {
             let args = router_args_for_script(operation, target_wrapper);
             run_router_script(&script, &args, operation)?
         };
-        let picker = apply_codex_picker_allowlist()?;
         return Ok(json!({
-            "ok": refresh["ok"].as_bool().unwrap_or(false) && picker["ok"].as_bool().unwrap_or(false),
+            "ok": refresh["ok"].as_bool().unwrap_or(false),
             "operation": operation,
-            "refresh": refresh,
-            "picker": picker
+            "refresh": refresh
         }));
     }
     if operation == "models" {
@@ -3894,10 +3884,7 @@ fn router_command(operation: &str, confirm: bool) -> Result<Value, String> {
 }
 
 fn allowed_provider(provider: &str) -> bool {
-    matches!(
-        provider,
-        "qwen-plan" | "kimi-api" | "opencode-go" | "grok-oauth" | "grok-api"
-    )
+    is_safe_provider_id(provider)
 }
 
 fn provider_toggle_args(provider: &str, enabled: bool, target_wrapper: bool) -> Vec<String> {
@@ -3962,6 +3949,64 @@ async fn install_router(confirm: bool) -> Result<Value, String> {
     .await
 }
 
+
+fn orchestra_overlay_script() -> Option<std::path::PathBuf> {
+    let mut cursor = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    for _ in 0..8 {
+        // A future desktop build must ship the same overlay the plugin package
+        // carries, so resolve the packaged path before the monorepo fallback.
+        let packaged = cursor
+            .join("plugins")
+            .join("codex-orchestra")
+            .join("scripts")
+            .join("router-overlay")
+            .join("apply.mjs");
+        if packaged.is_file() {
+            return Some(packaged);
+        }
+        let candidate = cursor.join("engine").join("overlays").join("apply.mjs");
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+        if !cursor.pop() {
+            break;
+        }
+    }
+    None
+}
+
+fn apply_router_overlay(checkout: &Path) -> Value {
+    let Some(script) = orchestra_overlay_script() else {
+        return json!({
+            "ok": false,
+            "status": "no-overlay",
+            "detail": "plugins/codex-orchestra/scripts/router-overlay/apply.mjs was not found."
+        });
+    };
+    if !checkout.join("src").is_dir() {
+        return json!({
+            "ok": false,
+            "status": "missing-src",
+            "detail": "Managed Router src/ directory was not detected."
+        });
+    }
+    let mut command = Command::new("node");
+    command.arg(&script).arg(checkout);
+    match command_output_with_timeout(command, Duration::from_secs(60)) {
+        Ok(output) if output.status.success() => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let parsed = serde_json::from_str::<Value>(&stdout).unwrap_or(json!({ "raw": redact(&stdout) }));
+            json!({ "ok": true, "status": "applied", "checkout": checkout, "result": parsed })
+        }
+        Ok(output) => json!({
+            "ok": false,
+            "status": "failed",
+            "detail": redact(&String::from_utf8_lossy(&output.stderr))
+        }),
+        Err(error) => json!({ "ok": false, "status": "failed", "detail": error }),
+    }
+}
+
 fn install_router_blocking(confirm: bool) -> Result<Value, String> {
     if !confirm {
         return Err("Router installation requires explicit confirmation".to_string());
@@ -3971,10 +4016,12 @@ fn install_router_blocking(confirm: bool) -> Result<Value, String> {
     }
     let root = router_root();
     if router_launcher().is_some() {
+        let overlay = apply_router_overlay(&root);
         return Ok(json!({
             "ok": true,
             "status": "already-detected",
             "root": root,
+            "overlay": overlay,
             "pinnedBy": git_revision(&root).or_else(|| router_version(&root)).unwrap_or_else(|| ROUTER_VERSION.to_string())
         }));
     }
@@ -4033,10 +4080,12 @@ fn install_router_blocking(confirm: bool) -> Result<Value, String> {
             "Router checkout resolved to an unexpected commit; expected {ROUTER_PINNED_COMMIT}"
         ));
     }
+    let overlay = apply_router_overlay(&root);
     Ok(json!({
         "ok": true,
         "status": "installed",
         "root": root,
+        "overlay": overlay,
         "pinnedCommit": commit,
         "pinnedBy": "verified signed release commit",
         "pinnedTag": ROUTER_PINNED_TAG,
@@ -4201,104 +4250,11 @@ fn open_model_curation_blocking(provider: String) -> Result<Value, String> {
 }
 
 fn apply_codex_picker_allowlist() -> Result<Value, String> {
-    let catalog_path = router_state_root().join("merged-models.json");
-    if !catalog_path.is_file() {
-        return Err(
-            "Router merged-models.json was not detected; picker allowlist was not changed"
-                .to_string(),
-        );
-    }
-    let contents = fs::read_to_string(&catalog_path)
-        .map_err(|error| format!("Router catalog could not be read: {error}"))?;
-    let parsed: Value = serde_json::from_str(&contents)
-        .map_err(|error| format!("Router catalog is not valid JSON: {error}"))?;
-    let catalog_ids = catalog_model_ids(&parsed);
-    let hidden = hidden_codex_model_ids(&catalog_ids);
-    let visible_routed = [
-        "grok-oauth/grok-4.6",
-        "opencode-go/kimi-k3",
-        "opencode-go/deepseek-v4-pro",
-        "opencode-go/deepseek-v4-flash",
-        "qwen-plan/qwen3.8-max",
-        "opencode-go-messages/qwen3.8-max",
-    ];
-    let picker_payload = json!({
-        "version": 1,
-        "hidden": hidden
-    });
-    atomic_write_file(
-        &router_state_root().join("model-picker.json"),
-        &format!("{picker_payload}\n"),
-    )?;
-    let subagent_payload = json!({
-        "version": 2,
-        "mode": "selected",
-        "enabled": visible_routed,
-        "disabled": hidden
-    });
-    atomic_write_file(
-        &router_state_root().join("multi-agent-settings.json"),
-        &format!("{subagent_payload}\n"),
-    )?;
-
-    if router_launcher().is_none() {
-        return Ok(json!({
-            "ok": true,
-            "status": "picker-state-written",
-            "hidden": hidden.len(),
-            "detail": "Picker allowlist was written. Rebuild the catalog from a managed Router checkout to publish it."
-        }));
-    }
-    let catalog_script = router_root().join("src").join("catalog.mjs");
-    if !catalog_script.is_file() {
-        return Ok(json!({
-            "ok": true,
-            "status": "picker-state-written",
-            "hidden": hidden.len(),
-            "detail": "Picker allowlist was written. Catalog rebuild script was not detected."
-        }));
-    }
-    let mut command = Command::new("node");
-    command.current_dir(router_root()).arg(&catalog_script);
-    let output = command_output_with_timeout(command, Duration::from_secs(90))?;
-    if !output.status.success() {
-        persist_log(
-            "error",
-            "picker-allowlist",
-            &format!(
-                "Catalog rebuild after picker allowlist exited with status {}",
-                output.status.code().unwrap_or(-1)
-            ),
-        );
-        return Err(
-            "Picker allowlist was written, but the Router catalog could not be rebuilt".to_string(),
-        );
-    }
-    persist_log(
-        "info",
-        "picker-allowlist",
-        &format!(
-            "Published Codex picker allowlist; {} extra models hidden",
-            hidden.len()
-        ),
-    );
     Ok(json!({
         "ok": true,
-        "status": "published",
-        "hidden": hidden.len(),
-        "visible": [
-            "gpt-5.6-sol",
-            "gpt-5.6-luna",
-            "gpt-5.6-terra",
-            "gpt-5.5",
-            "gpt-5.2",
-            "grok-oauth/grok-4.6",
-            "opencode-go/kimi-k3",
-            "opencode-go/deepseek-v4-pro",
-            "opencode-go/deepseek-v4-flash",
-            "qwen-plan/qwen3.8-max",
-            "opencode-go-messages/qwen3.8-max"
-        ]
+        "status": "router-hide-list",
+        "hidden": 0,
+        "detail": "Codex picker visibility stays on the Router hide-list. Orchestra does not rewrite it."
     }))
 }
 
@@ -5643,14 +5599,10 @@ fn validate_agent_definition(agent: &Value) -> Result<Value, String> {
         return Err("Agent id must match its stable role".to_string());
     }
     let provider = required_agent_text(agent, "providerId", 80)?;
-    let supported_frontend_provider =
-        role == "frontend" && matches!(provider.as_str(), "opencode-go" | "qwen-plan");
-    if provider != expected_provider
-        && !(role == "engineer" && provider == "grok-oauth")
-        && !supported_frontend_provider
-    {
-        return Err("Agent provider does not match its supported role binding".to_string());
+    if !is_safe_provider_id(&provider) && provider != "openai" {
+        return Err("Agent provider must be a Router slug or native openai".to_string());
     }
+    let _expected_provider = expected_provider;
     let model = required_agent_text(agent, "modelId", 160)?;
     if !valid_model_argument(&model)
         || (role == "root" && !model.starts_with("gpt-"))
@@ -7925,24 +7877,21 @@ mod tests {
     }
 
     #[test]
-    fn codex_picker_allowlist_keeps_only_reviewed_models() {
+    fn codex_picker_does_not_hide_community_or_user_models() {
         assert!(visible_codex_model_id("gpt-5.6-sol"));
         assert!(visible_codex_model_id("qwen-plan/qwen3.8-max"));
-        assert!(visible_codex_model_id("opencode-go-messages/qwen3.8-max"));
-        assert!(visible_codex_model_id("opencode-go/deepseek-v4-pro"));
-        assert!(visible_codex_model_id("opencode-go/deepseek-v4-flash"));
-        assert!(!visible_codex_model_id("qwen-plan/glm-5.2"));
-        assert!(!visible_codex_model_id("opencode-go/glm-5.2"));
-        assert_eq!(
-            hidden_codex_model_ids(&[
-                "gpt-5.6-sol".to_string(),
-                "qwen-plan/qwen3.8-max".to_string(),
-                "qwen-plan/glm-5.2".to_string(),
-                "opencode-go/glm-5.2".to_string(),
-                "gpt-5.6-sol".to_string(),
-            ]),
-            vec!["opencode-go/glm-5.2".to_string(), "qwen-plan/glm-5.2".to_string()]
-        );
+        assert!(visible_codex_model_id("qwen-plan/glm-5.2"));
+        assert!(visible_codex_model_id("my-reseller/demo"));
+        assert!(is_safe_provider_id("openrouter"));
+        assert!(is_safe_provider_id("my-reseller"));
+        assert!(!is_safe_provider_id("openai"));
+        assert!(!is_safe_provider_id("OpenRouter/v1"));
+        assert!(hidden_codex_model_ids(&[
+            "gpt-5.6-sol".to_string(),
+            "qwen-plan/glm-5.2".to_string(),
+            "my-reseller/demo".to_string(),
+        ])
+        .is_empty());
     }
 
     #[test]
@@ -8049,9 +7998,13 @@ mod tests {
         let mut unsafe_retry = agent.clone();
         unsafe_retry["retryLimit"] = json!(2);
         assert!(validate_agent_definition(&unsafe_retry).is_err());
-        let mut wrong_provider = agent;
-        wrong_provider["providerId"] = json!("grok-api");
+        let mut wrong_provider = agent.clone();
+        wrong_provider["providerId"] = json!("OpenRouter/v1");
         assert!(validate_agent_definition(&wrong_provider).is_err());
+        let mut community = agent;
+        community["providerId"] = json!("openrouter");
+        community["modelId"] = json!("openrouter/demo");
+        assert!(validate_agent_definition(&community).is_ok());
         let mut with_target = json!({
             "id": "frontend",
             "name": "Orchestra Frontend",

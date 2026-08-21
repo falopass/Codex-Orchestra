@@ -125,7 +125,12 @@ def tool_definitions() -> list[dict[str, Any]]:
         },
         {
             "name": "orchestra_router",
-            "description": "Detect, doctor, start, restart, logs, catalog, update or rollback the external Codex Router.",
+            "description": (
+                "Detect, doctor, start, restart, logs, catalog, update, rollback, "
+                "manage providers and models, or refresh the catalog for the external Codex Router. "
+                "connect-provider/disconnect-provider launch the local helper in a visible terminal "
+                "and never read credential values. Writes require confirm=true."
+            ),
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -141,12 +146,73 @@ def tool_definitions() -> list[dict[str, Any]]:
                             "start",
                             "restart",
                             "install",
+                            "connect-provider",
+                            "disconnect-provider",
+                            "list-providers",
+                            "enable-provider",
+                            "disable-provider",
+                            "upsert-user-provider",
+                            "upsert-user-models",
+                            "set-model-visible",
+                            "curate-models",
                             "refresh-catalog",
+                            "set-flag",
+                            "flags",
                             "update-check",
                             "update",
                             "rollback",
                         ],
                     },
+                    "provider": {
+                        "type": "string",
+                        "description": (
+                            "Router provider slug for connect-provider, disconnect-provider, "
+                            "enable/disable-provider, upsert-user-provider, or curate-models. "
+                            "Any lowercase slug is forwarded to the local Router helper. "
+                            "Never pass apiKey, key, token or secret values."
+                        ),
+                    },
+                    "displayName": {"type": "string"},
+                    "baseUrl": {"type": "string"},
+                    "ownedBy": {"type": "string"},
+                    "protocol": {"type": "string", "enum": ["openai", "anthropic", "openai-responses"]},
+                    "keyless": {
+                        "type": "boolean",
+                        "description": (
+                            "True only for local loopback providers (Ollama, llama.cpp) that need no credential. "
+                            "Keyless providers are restricted to 127.0.0.1/localhost/[::1] URLs."
+                        ),
+                    },
+                    "credentialFile": {"type": "string", "description": "Filename only, never a secret value."},
+                    "credentialEnvironment": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Environment variable names only, never secret values.",
+                    },
+                    "models": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "slug": {"type": "string", "description": "Provider/upstream model slug."},
+                                "upstreamModel": {"type": "string"},
+                                "displayName": {"type": "string"},
+                                "contextWindow": {"type": "integer"},
+                                "inputModalities": {"type": "array", "items": {"type": "string"}},
+                                "requestProfile": {
+                                    "type": "string",
+                                    "description": "Optional Router request profile name. Omit for default passthrough.",
+                                },
+                            },
+                            "additionalProperties": False,
+                        },
+                    },
+                    "model": {"type": "string"},
+                    "slug": {"type": "string"},
+                    "visible": {"type": "boolean"},
+                    "enabled": {"type": "boolean"},
+                    "flag": {"type": "string"},
+                    "value": {"type": ["boolean", "string"]},
                     "confirm": confirm,
                 },
                 "additionalProperties": False,

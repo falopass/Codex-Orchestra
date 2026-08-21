@@ -12,4 +12,4 @@ description: Detect the local Codex/Router environment and configure Orchestra-m
 5. Show the preview. Apply only with `orchestra_apply_managed` and `confirm=true`.
 6. Leave foreign AGENTS.md content and non-Orchestra agents untouched.
 
-Desktop remains the advanced setup UI for provider helpers, Grok OAuth and live checks.
+Provider connection does not need the desktop app: `orchestra_router action=connect-provider provider=<slug> confirm=true` opens the visible Router helper (or `grok login --oauth` for Grok OAuth) and the user pastes the key there. Keyless loopback providers (Ollama, llama.cpp) register with `upsert-user-provider` plus `keyless: true` and never ask for a key. Never ask for a key in chat. Desktop stays optional and keeps pricing import, feature flags, support bundle and live paid checks.

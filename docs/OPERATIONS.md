@@ -12,6 +12,12 @@ npm run build
 npm run format:check
 ```
 
+Validation is risk-based, not a mandatory pre-close checklist. Docs or
+metadata changes only need a link/path and diff review. Python/MCP/overlay
+changes run the focused plugin tests; contracts/Rust changes run typecheck or
+cargo; release or merge runs the full suite plus the isolated package check
+once. See [CONTRIBUTING.md](../CONTRIBUTING.md#validation-policy).
+
 The browser shell is fixture-backed. Native desktop requires Rust/Cargo and Tauri prerequisites. Set `CODEX_ORCHESTRA_DATA_DIR` to a temporary directory when exercising native commands in an isolated test; do not point tests at the real local application-data directory.
 
 ## Router lifecycle
@@ -45,14 +51,54 @@ selection never silently switches models. The engineer defaults to
 automatic fallback in the current Router pin. Only the reviewed Grok 4.6
 route is published in the Orchestra catalog.
 
-The Codex Desktop picker is a separate surface. Orchestra persists a reviewed
-allowlist into the Router `model-picker.json` and rebuilds `merged-models.json`
-after every confirmed catalog refresh: native GPT models, `grok-oauth/grok-4.6`,
-`opencode-go/kimi-k3`, `opencode-go/deepseek-v4-pro`,
-`opencode-go/deepseek-v4-flash`, `qwen-plan/qwen3.8-max` and
-`opencode-go-messages/qwen3.8-max`. Other routed models stay hidden and are
-removed from Router-managed custom agents. Fully quit and reopen Codex after
-the refresh so the picker reloads the published catalog.
+## User providers and models
+
+The plugin exposes the same surface without the desktop UI:
+`orchestra_router action=connect-provider provider=<slug> confirm=true`
+launches the Router helper in a visible terminal; the key is pasted there and
+never in chat. Any lowercase slug the Router helper can own is accepted,
+`openai`/`codex` excluded (native Codex login stays native).
+
+Custom providers and models extend the pinned registry through the Router
+state directory (see
+[ADR-010](DECISIONS/ADR-010-user-provider-overlay.md)):
+
+- `user-providers.json` and `user-models.json` are siblings in the Router
+  state directory. The overlay merges metadata before validate/freeze in a
+  patched `model-registry.mjs`.
+- The overlay helper ships inside the plugin package at
+  `plugins/codex-orchestra/scripts/router-overlay/apply.mjs`. Orchestra
+  applies the patch when it installs or updates the managed checkout, and
+  again on every `upsert-user-provider` / `connect-provider`. It does not
+  vendor the Router and does not treat the live engine as source of truth
+  for the patch.
+- Those responses carry an `overlay` status block: `applied`, `no-overlay`,
+  `missing-src` or `failed`. A custom provider is not usable until
+  `overlay.status` reads `applied`.
+- First-party provider ids from the pin cannot be overridden; broken overlay
+  entries are skipped with a warning instead of failing startup.
+- Keyless loopback providers (`keyless: true`, no credential fields, baseUrl
+  on `127.0.0.1` / `localhost` / `[::1]`) serve Ollama or llama.cpp without
+  any key. Remote providers still require HTTPS plus credential location
+  descriptors; remote plain HTTP is blocked.
+- Example fragments (not an allowlist) live in
+  [docs/templates/providers](templates/providers). Generic
+  `openai-compatible` transport does not imply every model feature works;
+  `requestProfile` is an optional string naming a Router request profile,
+  never an object; the default passthrough covers plain OpenAI-compatible
+  resellers.
+
+After any catalog change, `refresh-catalog` and Doctor run first, then Codex
+must be fully quit and reopened: the picker reloads on restart only.
+
+The Codex Desktop picker is a separate surface from the catalog. A confirmed
+`refresh-catalog` publishes the Router catalog together with the
+`user-providers.json` / `user-models.json` overlays: it does not hard-code a
+closed model list. Visibility and curated pricing are optional configuration
+kept in the Router picker state, not a hidden Orchestra allowlist, and
+Orchestra does not remove third-party models from Router-managed custom agents.
+Fully quit and reopen Codex after the refresh so the picker reloads the
+published catalog.
 
 The adapter prefers `model-router.ps1`, which carries the `codex` target
 namespace. It can fall back to the direct `codex-router.ps1` wrapper and strips

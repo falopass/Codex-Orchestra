@@ -15,7 +15,17 @@ export type RouterOperation =
   | "update-check"
   | "update"
   | "rollback"
-  | "support-bundle";
+  | "support-bundle"
+  | "connect-provider"
+  | "disconnect-provider"
+  | "upsert-user-provider"
+  | "list-providers"
+  | "enable-provider"
+  | "disable-provider"
+  | "upsert-user-models"
+  | "set-model-visible"
+  | "curate-models"
+  | "set-flag";
 
 export interface CodexInstall {
   detected: boolean;
@@ -127,6 +137,53 @@ export interface Model {
   contextWindow?: number;
   autoCompactionThreshold?: number;
   upstreamModel?: string;
+}
+
+export type UserProviderProtocol =
+  | "openai"
+  | "anthropic"
+  | "openai-responses";
+
+// Credential descriptors only. The filename and environment variable names
+// point at where the Router resolves a key; secret values never travel here.
+export interface UserProviderCredential {
+  file: string;
+  environment: string[];
+}
+
+export interface UserProviderRemoteEntry {
+  id: string;
+  displayName: string;
+  kind: "openai-compatible";
+  ownedBy: string;
+  baseUrl: string;
+  protocol?: UserProviderProtocol;
+  keyless?: false;
+  credential: UserProviderCredential;
+}
+
+export interface UserProviderKeylessEntry {
+  id: string;
+  displayName: string;
+  kind: "openai-compatible";
+  ownedBy: string;
+  baseUrl: string;
+  protocol?: UserProviderProtocol;
+  keyless: true;
+}
+
+export type UserProviderEntry =
+  | UserProviderRemoteEntry
+  | UserProviderKeylessEntry;
+
+export interface UserModelEntry {
+  slug: string;
+  upstreamModel?: string;
+  displayName?: string;
+  contextWindow?: number;
+  inputModalities?: string[];
+  // Router request profile name. A string, never an object.
+  requestProfile?: string;
 }
 
 export interface FrontendModelTarget {

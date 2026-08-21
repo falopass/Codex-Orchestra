@@ -18,6 +18,7 @@ flowchart LR
   Core --> RouterAdapter[Router adapter]
   Core --> AppServerAdapter[App Server adapter]
   RouterAdapter --> Router[External Codex Router 127.0.0.1]
+  UserOverlay["Router state dir: user-providers / user-models overlay"] --> Router
   AppServerAdapter --> Control[codex-control]
   Router --> Providers[Configured providers]
 ```
@@ -32,6 +33,9 @@ flowchart LR
 - `plugins/codex-orchestra`: marketplace plugin (skills + local stdio MCP). No embedded plugin UI exists in the current Codex plugin format.
 - `templates`: generated Codex agents, skill and managed AGENTS block.
 - `engine`: router lifecycle contract and upstream lock notes.
+- `docs/templates/providers`: example provider fragments (metadata only) for
+  the user provider overlay described in
+  [ADR-010](DECISIONS/ADR-010-user-provider-overlay.md).
 
 ## Domain concepts
 

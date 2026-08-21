@@ -40,12 +40,29 @@ python plugins\codex-orchestra\scripts\orchestra.py status
 python plugins\codex-orchestra\scripts\orchestra.py doctor
 python plugins\codex-orchestra\scripts\orchestra.py models
 python plugins\codex-orchestra\scripts\orchestra.py setup --project <abs-path>
+python plugins\codex-orchestra\scripts\orchestra.py router connect-provider --provider openrouter --confirm
 ```
 
 Writes and process changes need `--confirm`.
 
+## Connecting providers
+
+The agent never asks for an API key in chat. `connect-provider` opens the
+Router helper in a visible terminal; the key is pasted there only. Custom
+OpenAI-compatible resellers are registered with `upsert-user-provider`
+(metadata only) before connecting. See
+[docs/USER-GUIDE.md](../../docs/USER-GUIDE.md) and
+[ADR-010](../../docs/DECISIONS/ADR-010-user-provider-overlay.md). After any
+catalog change, fully quit and reopen Codex: the picker reloads on restart.
+
+Keyless local servers (Ollama, llama.cpp) are supported too:
+`upsert-user-provider` with `keyless: true`, no credential fields and a
+loopback baseUrl; no key anywhere. The Router overlay helper ships in the
+plugin package (`scripts/router-overlay/apply.mjs`) and provider responses
+report `overlay.status`.
+
 ## Desktop
 
-Advanced screens stay in the desktop app: pricing import, feature flags, support bundle, live paid checks and the full Run / App Server session UI.
+Advanced screens stay in the desktop app: pricing import, feature flags, support bundle, live paid checks and the full Run / App Server session UI. The desktop app is optional for plugin-only provider flows.
 
 See [docs/PLUGIN.md](../../docs/PLUGIN.md).

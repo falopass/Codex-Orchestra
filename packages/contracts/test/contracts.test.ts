@@ -9,6 +9,7 @@ import {
   VISIBLE_CODEX_MODEL_IDS,
   aggregateUsage,
   hiddenCodexModelIds,
+  isSafeProviderId,
   isVisibleCodexModelId,
   calculateEstimate,
   frontendStrategyForKey,
@@ -23,6 +24,11 @@ import {
   resolveFrontendModelStrategy,
   resolveModelBinding,
   routerIssueFromText,
+} from "../src/index";
+import type {
+  UserModelEntry,
+  UserProviderCredential,
+  UserProviderEntry,
 } from "../src/index";
 
 function readinessSnapshot(overrides: Record<string, unknown> = {}) {
@@ -130,7 +136,7 @@ test("logical model bindings resolve preferred available catalog entries", () =>
   assert.equal(result.needsCuration, false);
 });
 
-test("Codex picker allowlist keeps only native GPT plus the reviewed routed models", () => {
+test("Codex picker examples are documented, not an exclusive hide-list", () => {
   assert.deepEqual(
     [...VISIBLE_CODEX_MODEL_IDS],
     [
@@ -148,7 +154,8 @@ test("Codex picker allowlist keeps only native GPT plus the reviewed routed mode
     ],
   );
   assert.equal(isVisibleCodexModelId("qwen-plan/qwen3.8-max"), true);
-  assert.equal(isVisibleCodexModelId("opencode-go/glm-5.2"), false);
+  assert.equal(isVisibleCodexModelId("opencode-go/glm-5.2"), true);
+  assert.equal(isVisibleCodexModelId("my-reseller/demo"), true);
   assert.deepEqual(
     hiddenCodexModelIds([
       "gpt-5.6-sol",
@@ -158,7 +165,7 @@ test("Codex picker allowlist keeps only native GPT plus the reviewed routed mode
       "opencode-go/kimi-k3",
       "gpt-5.6-sol",
     ]),
-    ["opencode-go/glm-5.2", "qwen-plan/glm-5.2"],
+    [],
   );
 });
 
@@ -426,4 +433,56 @@ test("readiness treats a stopped Router as not live", () => {
   assert.equal(running.routerLive, true);
   assert.equal(running.level, "ready");
   assert.equal(running.headline, "En marcha");
+});
+
+test("safe provider ids accept community slugs and reject native openai", () => {
+  assert.equal(isSafeProviderId("openrouter"), true);
+  assert.equal(isSafeProviderId("my-reseller"), true);
+  assert.equal(isSafeProviderId("openai"), false);
+  assert.equal(isSafeProviderId("codex"), false);
+  assert.equal(isSafeProviderId("OpenRouter/v1"), false);
+});
+
+test("user model entries accept a string requestProfile", () => {
+  const entry: UserModelEntry = {
+    slug: "my-reseller/demo-model",
+    requestProfile: "openai-responses",
+  };
+  assert.equal(entry.requestProfile, "openai-responses");
+  assert.equal(entry.slug, "my-reseller/demo-model");
+});
+
+test("user model requestProfile rejects object values", () => {
+  const entry: UserModelEntry = {
+    slug: "my-reseller/demo-model",
+    // @ts-expect-error requestProfile is a string, never an object
+    requestProfile: { profile: "openai-responses" },
+  };
+  assert.equal(entry.slug, "my-reseller/demo-model");
+});
+
+test("user provider entries separate remote credentials from keyless loopback", () => {
+  const credential: UserProviderCredential = {
+    file: "my-reseller-api-key.secret",
+    environment: ["MY_RESELLER_API_KEY"],
+  };
+  const remote: UserProviderEntry = {
+    id: "my-reseller",
+    displayName: "My Reseller",
+    kind: "openai-compatible",
+    ownedBy: "my-reseller",
+    baseUrl: "https://reseller.example/v1",
+    credential,
+  };
+  const keyless: UserProviderEntry = {
+    id: "ollama",
+    displayName: "Ollama",
+    kind: "openai-compatible",
+    ownedBy: "ollama",
+    baseUrl: "http://127.0.0.1:11434",
+    keyless: true,
+  };
+  assert.equal("credential" in remote, true);
+  assert.equal("credential" in keyless, false);
+  assert.equal(keyless.keyless, true);
 });

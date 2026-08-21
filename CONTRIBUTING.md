@@ -34,18 +34,39 @@ Use a temporary `CODEX_ORCHESTRA_DATA_DIR` for native experiments. Never point t
 3. Open a PR against `main`.
 4. Fill the PR template. Call out secret scan, plugin compatibility and managed-config impact.
 
-## Checks
+## Validation policy
 
-Run what your change can break:
+Scale validation to the risk of the change. Do not re-run the full suite for
+every turn or for documentation-only work:
+
+- Docs, metadata or marketplace entries: review links, paths and the diff for
+  consistency. Do not repeat suites that already passed.
+- Python, MCP or Router overlay changes: run the focused plugin tests affected
+  by the change.
+- Contracts or Rust changes: run the typecheck / cargo checks for the surfaces
+  that changed.
+- Release, merge or publication: run the full suite plus the isolated package
+  test once as the release gate.
+- Follow-up messages with no code changes: report the validation already
+  recorded; do not launch every command again.
+
+The full checklist below is an optional release gate, not a per-turn
+requirement:
 
 ```powershell
-npm run typecheck
-npm test
+python -m unittest plugins/codex-orchestra/test/test_plugin_core.py
+node --test engine/overlays/test/user-providers.test.mjs
+npx --no-install tsx --test packages/contracts/test/contracts.test.ts
 npm run check:secrets
-npm run format:check
+cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml --lib
+git diff --check
 ```
 
-Add `npm run test:rust` when you touch `apps/desktop/src-tauri`. Add `npm run build` when you touch the desktop renderer.
+For a release also reproduce the packaged-plugin install in isolation: copy
+only `plugins/codex-orchestra` (without `engine/`) and resolve/apply
+`scripts/router-overlay/apply.mjs`. Add `npm run test:rust` when you touch
+`apps/desktop/src-tauri`; add `npm run build` when you touch the desktop
+renderer.
 
 ## Style
 
@@ -53,6 +74,9 @@ Add `npm run test:rust` when you touch `apps/desktop/src-tauri`. Add `npm run bu
 - Python plugin code stays stdlib-only.
 - Personal paths, emails and machine names do not belong in fixtures or docs. Use `<you>`, `%USERPROFILE%` or temp directories.
 - Roles are logical. Model ids are bindings, not identity.
+- `docs/templates/providers` fragments are examples, not an allowlist, and
+  carry metadata only: never key values. The overlay rejects first-party
+  provider id overrides (ADR-010).
 
 ## What not to commit
 
