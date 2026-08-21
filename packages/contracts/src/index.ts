@@ -69,7 +69,11 @@ export function hiddenCodexModelIds(_catalogIds: string[]) {
 }
 
 export function isSafeProviderId(provider: string) {
-  return /^[a-z][a-z0-9-]{1,31}$/.test(provider) && provider !== "openai" && provider !== "codex";
+  return (
+    /^[a-z][a-z0-9-]{1,31}$/.test(provider) &&
+    provider !== "openai" &&
+    provider !== "codex"
+  );
 }
 
 export const FRONTEND_MODEL_CANDIDATES: FrontendModelCandidate[] = [

@@ -161,21 +161,21 @@ Every mutating operation needs `confirm=true`. Read-only operations do not.
 The CLI equivalent uses the same names through
 `python plugins\codex-orchestra\scripts\orchestra.py`.
 
-| Operation              | MCP action                                                              | CLI                                                                 |
-| ---------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------- |
-| Detect / status        | `orchestra_router action=status` (or `detect`)                            | `python plugins\codex-orchestra\scripts\orchestra.py router status`  |
-| Doctor                 | `orchestra_doctor`                                                        | `python plugins\codex-orchestra\scripts\orchestra.py doctor`         |
-| Install Router         | `orchestra_router action=install confirm=true`                            | `... router install --confirm`                                       |
-| Update Router          | `orchestra_router action=update confirm=true`                             | `... router update --confirm`                                        |
-| Rollback Router        | `orchestra_router action=rollback confirm=true`                           | `... router rollback --confirm`                                      |
-| Start / restart        | `orchestra_router action=start confirm=true` (or `restart`)               | `... router start --confirm` / `... router restart --confirm`        |
-| Refresh catalog        | `orchestra_router action=refresh-catalog confirm=true`                    | `... router refresh-catalog --confirm`                               |
-| Logs                   | `orchestra_router action=logs`                                            | `... router logs`                                                    |
-| List providers         | `orchestra_router action=list-providers`                                  | `... router list-providers`                                          |
-| Connect provider       | `orchestra_router action=connect-provider provider=<id> confirm=true`      | `... router connect-provider --provider <id> --confirm`              |
-| Disconnect provider    | `orchestra_router action=disconnect-provider provider=<id> confirm=true`   | `... router disconnect-provider --provider <id> --confirm`           |
-| Enable provider        | `orchestra_router action=enable-provider provider=<id> confirm=true`       | `... router enable-provider --provider <id> --confirm`               |
-| Disable provider       | `orchestra_router action=disable-provider provider=<id> confirm=true`      | `... router disable-provider --provider <id> --confirm`              |
+| Operation           | MCP action                                                               | CLI                                                                 |
+| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| Detect / status     | `orchestra_router action=status` (or `detect`)                           | `python plugins\codex-orchestra\scripts\orchestra.py router status` |
+| Doctor              | `orchestra_doctor`                                                       | `python plugins\codex-orchestra\scripts\orchestra.py doctor`        |
+| Install Router      | `orchestra_router action=install confirm=true`                           | `... router install --confirm`                                      |
+| Update Router       | `orchestra_router action=update confirm=true`                            | `... router update --confirm`                                       |
+| Rollback Router     | `orchestra_router action=rollback confirm=true`                          | `... router rollback --confirm`                                     |
+| Start / restart     | `orchestra_router action=start confirm=true` (or `restart`)              | `... router start --confirm` / `... router restart --confirm`       |
+| Refresh catalog     | `orchestra_router action=refresh-catalog confirm=true`                   | `... router refresh-catalog --confirm`                              |
+| Logs                | `orchestra_router action=logs`                                           | `... router logs`                                                   |
+| List providers      | `orchestra_router action=list-providers`                                 | `... router list-providers`                                         |
+| Connect provider    | `orchestra_router action=connect-provider provider=<id> confirm=true`    | `... router connect-provider --provider <id> --confirm`             |
+| Disconnect provider | `orchestra_router action=disconnect-provider provider=<id> confirm=true` | `... router disconnect-provider --provider <id> --confirm`          |
+| Enable provider     | `orchestra_router action=enable-provider provider=<id> confirm=true`     | `... router enable-provider --provider <id> --confirm`              |
+| Disable provider    | `orchestra_router action=disable-provider provider=<id> confirm=true`    | `... router disable-provider --provider <id> --confirm`             |
 
 `install` and `update` apply the packaged Router overlay to the managed
 checkout and report `overlay.status`; a custom provider is not usable until

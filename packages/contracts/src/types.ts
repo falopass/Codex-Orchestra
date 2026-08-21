@@ -139,10 +139,7 @@ export interface Model {
   upstreamModel?: string;
 }
 
-export type UserProviderProtocol =
-  | "openai"
-  | "anthropic"
-  | "openai-responses";
+export type UserProviderProtocol = "openai" | "anthropic" | "openai-responses";
 
 // Credential descriptors only. The filename and environment variable names
 // point at where the Router resolves a key; secret values never travel here.
@@ -173,8 +170,7 @@ export interface UserProviderKeylessEntry {
 }
 
 export type UserProviderEntry =
-  | UserProviderRemoteEntry
-  | UserProviderKeylessEntry;
+  UserProviderRemoteEntry | UserProviderKeylessEntry;
 
 export interface UserModelEntry {
   slug: string;
